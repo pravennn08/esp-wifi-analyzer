@@ -95,3 +95,6 @@ and the [initial setup report](docs/setup-report.md).
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for issue reporting, development
 conventions, validation, and pull request guidance. GitHub issue forms are
 available for bug reports and feature requests.
+
+Project participation follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+See the [changelog](CHANGELOG.md) for user-facing changes and current limits.

@@ -5,6 +5,8 @@ or development tooling. Search existing issues before starting. Discuss larger
 features or architecture changes in an issue so the scope and hardware needs
 are clear. Small fixes can go directly to a pull request.
 
+Participation is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Project context
 
 - [README](README.md): supported hardware, features, and quick start.
@@ -44,6 +46,9 @@ Keep estimates and unknowns explicit.
    parsing, scheduling, history, or report behavior.
 4. Update relevant documentation when commands, capacities, setup, or supported
    hardware change.
+5. Add a concise entry under `Unreleased` in [CHANGELOG.md](CHANGELOG.md) for
+   user-facing changes. Describe the resulting behavior and any compatibility
+   limits; do not add a release date or version tag before an actual release.
 
 ## Code conventions
 
