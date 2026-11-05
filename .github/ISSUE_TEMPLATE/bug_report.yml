@@ -1,0 +1,82 @@
+name: Bug report
+description: Report a reproducible firmware, CLI, build, or documentation problem.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first and read the [contribution guide](https://github.com/pravennn08/esp-wifi-analyzer/blob/main/CONTRIBUTING.md).
+        Redact Wi-Fi passwords, private network names, BSSIDs, and device MAC addresses from public logs.
+  - type: input
+    id: version
+    attributes:
+      label: Firmware version and commit
+      description: Include the commit hash because different builds can display the same firmware version.
+      placeholder: "0.1.0; git rev-parse --short HEAD"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Scanning or radio initialization
+        - Serial CLI or command editing
+        - Watch or stop
+        - Cached networks, history, or channel reports
+        - Build, setup, or CI
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Hardware and development environment
+      description: For host-only or documentation problems, mark hardware fields as not applicable.
+      placeholder: |
+        Board/module:
+        Chip revision and flash size:
+        Host operating system:
+        rustc +stable --version:
+        rustc +esp --version:
+        espflash --version:
+        Serial terminal and baud rate:
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include the exact CLI commands, starting state, and whether the problem repeats after reset.
+      placeholder: |
+        1. Flash commit ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Describe the result you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Describe the observed result, frequency, and any reset or error message.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste the smallest relevant redacted boot, status, command, or build log. No code fences are needed.
+      render: text
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Include relevant scan coverage, watch interval, uptime, heap readings, or recent changes.

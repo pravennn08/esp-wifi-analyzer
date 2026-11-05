@@ -1,0 +1,42 @@
+name: Feature request
+description: Propose a capability or improvement with a clear use case.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues before proposing a feature. Read the [contribution guide](https://github.com/pravennn08/esp-wifi-analyzer/blob/main/CONTRIBUTING.md) for the architecture and validation workflow.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: Explain what you are trying to diagnose or accomplish and where the current behavior falls short.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the user-visible behavior. Include example CLI commands or output if useful.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Describe observable results that would demonstrate the feature works.
+      placeholder: |
+        - Given ..., when ..., the device reports ...
+        - Existing commands continue to ...
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Hardware and resource considerations
+      description: Mention board support, RAM/flash cost, radio channel scheduling, and how the feature could be tested. Estimates or unknowns are fine.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include workarounds, simpler approaches, or related issues.

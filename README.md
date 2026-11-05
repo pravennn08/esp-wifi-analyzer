@@ -89,3 +89,9 @@ docs/                 Architecture, CLI contract, development and validation
 See [architecture](docs/architecture.md), [CLI contract](docs/cli.md),
 [development](docs/development.md), [validation](docs/validation.md),
 and the [initial setup report](docs/setup-report.md).
+
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for issue reporting, development
+conventions, validation, and pull request guidance. GitHub issue forms are
+available for bug reports and feature requests.

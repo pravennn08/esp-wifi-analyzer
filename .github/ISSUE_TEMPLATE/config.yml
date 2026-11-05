@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contribution and development guide
+    url: https://github.com/pravennn08/esp-wifi-analyzer/blob/main/CONTRIBUTING.md
+    about: Read setup instructions, code conventions, validation steps, and how to contribute.
