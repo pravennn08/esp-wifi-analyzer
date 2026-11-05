@@ -1,10 +1,14 @@
 # Changelog
 
-This file records user-facing changes to ESP32 Wi-Fi Analyzer. Entries remain
-under `Unreleased` until a version is tagged and published. The current firmware
-reports version `0.1.0`; that build identifier alone does not indicate a release.
+This file records user-facing changes to ESP32 Wi-Fi Analyzer. Changes for the
+next release are collected under `Unreleased`. Release versions correspond to
+Git tags using the `vMAJOR.MINOR.PATCH` format.
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-11-05
+
+Initial MVP release for the classic ESP32 / WROOM-32.
 
 ### Added
 
@@ -76,7 +80,7 @@ reports version `0.1.0`; that build identifier alone does not indicate a release
   channel-6 scan, and 3340 ms for a full passive scan. These are observations
   from one setup, not performance guarantees.
 
-### Current limits
+### Known limitations
 
 - Scans cover configured channels 1..11 on the classic ESP32; support for other
   chips and channel sets has not been established.
@@ -88,4 +92,5 @@ reports version `0.1.0`; that build identifier alone does not indicate a release
   need additional hardware evidence. See [validation](docs/validation.md).
 - HTTP dashboards, persistent history, and raw packet analysis are not included.
 
-[Unreleased]: https://github.com/pravennn08/esp-wifi-analyzer/commits/main
+[Unreleased]: https://github.com/pravennn08/esp-wifi-analyzer/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/pravennn08/esp-wifi-analyzer/releases/tag/v0.1.0
