@@ -1,0 +1,8 @@
+# Host tests stay on the host target. Firmware builds explicitly select Xtensa.
+[alias]
+esp-build = "build -p analyzer-firmware --target xtensa-esp32-none-elf -Zbuild-std=core,alloc"
+esp-check = "check -p analyzer-firmware --target xtensa-esp32-none-elf -Zbuild-std=core,alloc"
+
+[target.xtensa-esp32-none-elf]
+runner = "espflash flash --monitor --chip esp32"
+rustflags = ["-C", "link-arg=-nostartfiles"]

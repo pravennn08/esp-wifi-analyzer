@@ -1,0 +1,18 @@
+name: Host checks
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install host Rust components
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+      - run: cargo +stable fmt --all -- --check
+      - run: cargo +stable test -p analyzer-core --locked
+      - run: cargo +stable clippy -p analyzer-core --all-targets --locked -- -D warnings

@@ -1,0 +1,5 @@
+/target/
+/.tools/
+/.artifacts/
+*.log
+.vscode/*.local.json
