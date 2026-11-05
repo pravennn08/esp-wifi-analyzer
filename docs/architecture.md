@@ -23,8 +23,10 @@ flowchart LR
     App -->|bounded replies| Console
 ```
 
-The diagram describes the intended MVP. The initial foundation starts the
-application task and radio; the console task and channels are not wired yet.
+The console task and bounded status request/reply channels are implemented.
+The console handles help and command editing locally; status is an immutable
+snapshot produced by the application task, which retains sole ownership of
+the radio and analyzer state. Scan execution remains a future milestone.
 Use Embassy with esp-rtos's integration; do not add a second executor architecture
 or scheduler. Run the application on one core initially.
 
@@ -34,8 +36,8 @@ or scheduler. Run the application on one core initially.
 |---|---|---|
 | WIFI / WifiController | application task | One outstanding scan |
 | AnalyzerState / latest snapshot / history | application task | Mutation via commands |
-| UART0 RX and ordinary TX | console task, when added | One writer; escaped SSIDs |
-| Request queue | console producer / application consumer | 4 entries; reject with Busy when full |
+| UART0 RX and ordinary TX | console task | One writer; ASCII command echo |
+| Request queue | console producer / application consumer | 4 entries; one pending status per console; reject with Busy when full |
 | Response queue | application producer / console consumer | 2 entries; awaited reliable command replies |
 | Optional periodic notices | application producer | Coalesce or drop with a counter |
 
@@ -44,6 +46,22 @@ chunks or use a preallocated report buffer with explicit ownership. Do not hold
 a mutex across an await or mix normal `println!` output into interactive prompts.
 Bootstrap/panic output is the only exception. A stalled terminal must not create
 unbounded reports or allocations.
+
+The console selects between cancellation-safe UART reads and status replies,
+giving ready replies priority. It uses a 128-byte line editor and a 1024-byte
+report buffer, redraws an in-progress line after a status response, and writes
+all UART bytes through one TX owner. The transport loops over partial writes.
+No application mutex is held across an await.
+
+CR, LF, and CRLF are accepted; CRLF submits once. Backspace/Delete edit a valid
+line. Ctrl+U and forwarded Ctrl+C clear it. On overflow, unsupported input, or
+UART receive error, discard until the line boundary or an explicit clear;
+never execute a truncated prefix. Current commands are ASCII; raw SSID data
+remains byte-oriented for the later scan implementation.
+
+Radio initialization failure leaves the console operational and produces a
+faulted status. Current heap statistics are read as one allocator snapshot;
+they are not whole-system free RAM or historical peak measurements.
 
 ## Scan lifecycle
 

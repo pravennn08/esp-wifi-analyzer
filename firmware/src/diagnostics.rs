@@ -1,8 +1,9 @@
-use crate::platform::serial;
-
-pub fn boot_banner() {
-    serial::boot(concat!("ESP32 Wi-Fi Analyzer ", env!("CARGO_PKG_VERSION")));
-    serial::boot("Target: ESP32 / 2.4 GHz / UART0 at 115200 baud");
-    serial::boot("Foundation build: radio initialization and async runtime.");
-    serial::boot("Interactive CLI and scan execution are not implemented yet.");
-}
+//! Only the console task writes ordinary UART output; panic output is exceptional.
+pub const PROMPT: &[u8] = b"wifi> ";
+pub const INTRO: &str = concat!(
+    "\r\nESP32 Wi-Fi Analyzer ",
+    env!("CARGO_PKG_VERSION"),
+    "\r\n",
+    "Target: ESP32 / UART0 at 115200 baud\r\n",
+    "Type 'help' for commands.\r\n",
+);

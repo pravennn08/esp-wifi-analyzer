@@ -1,5 +1,4 @@
 $ErrorActionPreference = 'Stop'
-. "$PSScriptRoot\env.ps1"
 Push-Location (Split-Path -Parent $PSScriptRoot)
 try {
     cargo +stable fmt --all -- --check
@@ -8,6 +7,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Host tests failed' }
     cargo +stable clippy -p analyzer-core --all-targets --locked -- -D warnings
     if ($LASTEXITCODE -ne 0) { throw 'Host lint failed' }
-    cargo +esp esp-build --locked
-    if ($LASTEXITCODE -ne 0) { throw 'Firmware build failed' }
+    & "$PSScriptRoot\build.ps1"
+    cargo +esp clippy -p analyzer-firmware --target xtensa-esp32-none-elf '-Zbuild-std=core,alloc' --locked -- -D warnings
+    if ($LASTEXITCODE -ne 0) { throw 'Firmware lint failed' }
 } finally { Pop-Location }

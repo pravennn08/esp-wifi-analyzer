@@ -14,7 +14,6 @@ esp_bootloader_esp_idf::esp_app_desc!();
 
 #[esp_rtos::main]
 async fn main(spawner: Spawner) -> ! {
-    let radio = board::init();
-    diagnostics::boot_banner();
-    app::run(spawner, radio).await
+    let resources = board::init();
+    app::run(spawner, resources).await
 }

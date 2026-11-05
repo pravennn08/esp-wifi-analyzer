@@ -1,5 +1,8 @@
 //! Initial CLI grammar. Extend this without adding HAL dependencies.
+mod input;
 mod parser;
+pub mod report;
+pub use input::{InputEvent, LineEditor, LineError};
 pub use parser::parse;
 
 use crate::model::ScanOptions;

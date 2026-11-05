@@ -1,15 +1,20 @@
-//! Planned bounded command protocol for the console and application tasks.
-//! These types are defined now; queues are added with the interactive CLI.
-#![allow(dead_code)]
-use analyzer_core::{cli::Command, error::ScanError};
+//! Bounded status protocol. Only the application task reads analyzer state.
+use analyzer_core::{
+    config::{REQUEST_QUEUE_DEPTH, RESPONSE_QUEUE_DEPTH},
+    state::StatusSnapshot,
+};
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel};
 
-pub struct Request {
+pub struct StatusRequest {
     pub id: u32,
-    pub command: Command,
 }
 
-pub enum Reply {
-    Accepted { request_id: u32 },
-    Complete { request_id: u32, scan_id: u32 },
-    Failed { request_id: u32, error: ScanError },
+pub struct StatusReply {
+    pub request_id: u32,
+    pub status: StatusSnapshot,
 }
+
+pub static REQUESTS: Channel<CriticalSectionRawMutex, StatusRequest, REQUEST_QUEUE_DEPTH> =
+    Channel::new();
+pub static REPLIES: Channel<CriticalSectionRawMutex, StatusReply, RESPONSE_QUEUE_DEPTH> =
+    Channel::new();

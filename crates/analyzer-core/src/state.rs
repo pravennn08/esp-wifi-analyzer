@@ -25,3 +25,23 @@ impl Default for AnalyzerState {
         }
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RadioState {
+    Initialized,
+    Failed,
+}
+
+/// Small, immutable telemetry message copied to the console task.
+#[derive(Clone, Copy, Debug)]
+pub struct StatusSnapshot {
+    pub uptime_ms: u64,
+    pub radio: RadioState,
+    pub scanner: ScannerState,
+    pub successful_scans: u32,
+    pub failed_scans: u32,
+    pub cached_aps: usize,
+    pub last_scan_duration_ms: Option<u32>,
+    pub heap_total_bytes: usize,
+    pub heap_used_bytes: usize,
+}

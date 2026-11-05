@@ -1,6 +1,6 @@
 param([Parameter(Mandatory = $true)][string]$Port)
 $ErrorActionPreference = 'Stop'
-. "$PSScriptRoot\env.ps1"
+Get-Command espflash -ErrorAction Stop | Out-Null
 & "$PSScriptRoot\build.ps1" -Release
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $image = Join-Path $projectRoot 'target\xtensa-esp32-none-elf\release\esp-wifi-analyzer'

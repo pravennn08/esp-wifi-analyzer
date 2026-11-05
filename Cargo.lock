@@ -39,6 +39,8 @@ version = "0.1.0"
 dependencies = [
  "analyzer-core",
  "embassy-executor",
+ "embassy-futures",
+ "embassy-sync 0.8.0",
  "embassy-time",
  "esp-alloc",
  "esp-backtrace",
@@ -47,6 +49,7 @@ dependencies = [
  "esp-println",
  "esp-radio",
  "esp-rtos",
+ "heapless 0.9.3",
 ]
 
 [[package]]
