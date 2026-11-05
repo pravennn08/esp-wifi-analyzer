@@ -104,3 +104,13 @@ See the [changelog](CHANGELOG.md) for user-facing changes and current limits.
 Read [SECURITY.md](SECURITY.md) for supported builds, vulnerability reporting,
 disclosure handling, and the firmware's trust boundaries. Do not post
 vulnerability details or sensitive diagnostic data in public issues.
+
+## License
+
+Project code is licensed under the Apache License, Version 2.0. See
+[LICENSE.md](LICENSE.md) for the full terms.
+
+Third-party dependencies, generated or adapted upstream code, and Espressif
+wireless driver binaries retain their applicable licenses and notices. The
+project's license does not replace those terms. Preserve the required upstream
+copyright, license, and attribution notices when redistributing them.

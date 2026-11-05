@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! All board peripheral selection and startup sequencing lives here.
 use esp_hal::{
     Async,

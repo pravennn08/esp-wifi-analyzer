@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Initial CLI grammar. Extend this without adding HAL dependencies.
 mod input;
 mod parser;

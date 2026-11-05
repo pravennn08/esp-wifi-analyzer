@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 #![no_std]
 #![no_main]
 #![deny(clippy::mem_forget)]

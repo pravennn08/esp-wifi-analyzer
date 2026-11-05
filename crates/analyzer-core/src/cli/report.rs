@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Reports use caller-owned fixed-capacity buffers or another fmt::Write sink.
 use core::fmt::{self, Write};
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Hardware-independent, allocation-free analyzer types and policy.
 #![no_std]
 #![forbid(unsafe_code)]

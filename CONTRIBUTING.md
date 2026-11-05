@@ -128,3 +128,18 @@ Keep generated build artifacts, local tool installations, credentials, and
 unrelated formatting changes out of the pull request. Keep discussion focused
 and respectful, and respond to review with the same validation evidence used
 to support the original change.
+
+## Licensing contributions
+
+Unless explicitly stated otherwise, contributions intentionally submitted for
+inclusion in this project are provided under the Apache License, Version 2.0,
+as described in Section 5 of [LICENSE.md](LICENSE.md).
+
+Submit only material you have the right to contribute under the stated terms.
+Identify third-party material and its license, and retain existing copyright,
+license, and attribution notices. Discuss material with different licensing
+requirements before including it in a pull request.
+
+Use `SPDX-License-Identifier: Apache-2.0` in a comment at the top of new
+project-owned Rust and PowerShell source files. Preserve any existing upstream
+notices when adapting code; an SPDX header does not replace those notices.

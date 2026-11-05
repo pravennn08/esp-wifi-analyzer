@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! The radio worker owns the controller for the entire scan operation.
 use analyzer_core::{
     analysis::scan::retain,

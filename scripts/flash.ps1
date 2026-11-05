@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 param([Parameter(Mandatory = $true)][string]$Port)
 $ErrorActionPreference = 'Stop'
 Get-Command espflash -ErrorAction Stop | Out-Null

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! State owned by the application task; never shared as mutable globals.
 use crate::model::ScanSnapshot;
 

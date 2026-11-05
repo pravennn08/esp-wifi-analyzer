@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Only the console task writes ordinary UART output; panic output is exceptional.
 pub const PROMPT: &[u8] = b"wifi> ";
 pub const INTRO: &str = concat!(

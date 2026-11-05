@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use analyzer_core::{
     analysis::scan::retain,
     config::MAX_ACCESS_POINTS,

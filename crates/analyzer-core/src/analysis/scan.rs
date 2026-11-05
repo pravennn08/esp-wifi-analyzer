@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Deterministic strongest-first retention across the configured channel sweep.
 use crate::model::{AccessPoint, ScanSnapshot};
 

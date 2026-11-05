@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! The console task exclusively owns both halves of UART0 and all ordinary output.
 use analyzer_core::{
     cli::{Command, InputEvent, LineEditor, LineError, report::write_status},

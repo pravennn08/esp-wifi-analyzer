@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Composition and task ownership. Domain state stays local to its owner.
 pub mod messages;
 mod tasks;

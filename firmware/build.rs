@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
+// Adapted from esp-generate 2.0.0: https://github.com/esp-rs/esp-generate
+// Modified for this project to use plain-text linker diagnostics.
+
 fn main() {
     linker_be_nice();
     check_xtensa_linker_available();

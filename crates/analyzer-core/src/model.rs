@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use heapless::Vec;
 
 use crate::config::MAX_ACCESS_POINTS;

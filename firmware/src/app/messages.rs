@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Bounded protocols between the console, state owner, and radio worker.
 use analyzer_core::{
     cli::Command,

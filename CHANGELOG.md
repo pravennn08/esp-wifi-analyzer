@@ -38,6 +38,8 @@ reports version `0.1.0`; that build identifier alone does not indicate a release
   project code of conduct.
 - Root security policy covering maintained builds, vulnerability reporting,
   disclosure handling, and firmware trust boundaries.
+- Apache-2.0 project licensing with the official license text in `LICENSE.md`,
+  inherited Cargo package metadata, SPDX source headers, and contribution terms.
 
 ### Changed
 

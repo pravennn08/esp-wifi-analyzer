@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Application capacities; radio-driver allocations are budgeted separately.
 pub const MAX_ACCESS_POINTS: usize = 32;
 pub const HISTORY_SAMPLES: usize = 16;

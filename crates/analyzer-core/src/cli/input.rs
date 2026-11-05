@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Bounded ASCII command editor. Rejected lines cannot execute a truncated prefix.
 use heapless::Vec;
 

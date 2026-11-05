@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 $ErrorActionPreference = 'Stop'
 Push-Location (Split-Path -Parent $PSScriptRoot)
 try {

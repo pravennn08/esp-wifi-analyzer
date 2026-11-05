@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Missing samples are not encoded as a fake RSSI value.
 use crate::{
     config::{HISTORY_SAMPLES, MAX_ACCESS_POINTS},

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use super::Command;
 use crate::{
     config::{DEFAULT_WATCH_INTERVAL_SECS, MAX_WATCH_COUNT, MAX_WATCH_INTERVAL_SECS},

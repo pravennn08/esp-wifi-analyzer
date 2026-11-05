@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 //! Monotonic scan scheduling, independent of executors and driver futures.
 use crate::model::WatchOptions;
 
