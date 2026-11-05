@@ -6,7 +6,8 @@ the radio stack also uses Espressif wireless driver binaries.
 
 ## Current state
 
-The scan CLI is implemented; board acceptance testing remains in progress:
+The scan CLI is implemented. Basic command acceptance passed on the user's board;
+long-duration and fault-injection checks remain:
 
 - A two-crate workspace with a hardware-independent `no_std` library.
 - ESP32 startup, heap initialization, scheduler startup, radio initialization,
@@ -62,9 +63,10 @@ wifi> channels
 wifi> stop
 ```
 
-The previous foundation image booted successfully on the user's ESP32 revision
-3.1 with 4 MB flash. The scan CLI still needs its board acceptance
-checks. The implementation task builds the image without flashing the board.
+The user verified boot, help/status, watch/stop, active/channel/passive scans,
+cached networks, and channel summaries on an ESP32 revision 3.1 with 4 MB flash.
+See [validation evidence](docs/validation.md) for observed durations and limits
+of that acceptance run. Multi-hour soak and controlled-fault checks remain.
 
 The current Espressif generator targets ESP32 revision 3.0 and later. Confirm
 the actual chip revision with `espflash board-info --port COM3` before flashing;

@@ -1,4 +1,4 @@
-# Setup report 2026-11-05
+# Setup Report
 
 Target directory: `C:\Users\Raven\Documents\Projects\hardware\esp-wifi-analyzer`
 Target chip: classic ESP32 / WROOM-32, Xtensa, 2.4 GHz.
@@ -54,8 +54,12 @@ parsing, safe line editing, report bounds, scan retention, history eligibility,
 watch cadence, and urgent-stop ordering. Development/release firmware builds
 and host/firmware Clippy pass locally. The workflow has Linux host checks and
 Windows ESP32 build/lint checks, and was validated with actionlint.
-Updated CLI/radio behavior still needs board acceptance; no new image was
-flashed by the implementation task. Flash the new image and follow
-docs/validation.md before describing its hardware behavior as verified.
+The user subsequently flashed the CLI image and reported acceptance passed.
+Serial evidence verifies help/status, watch/stop, full active scans (1346 ms),
+channel-6 scans (306 ms), passive full scans (3340 ms), cached networks, and
+matching channel summaries. Status at 210 seconds showed zero failed scans
+and UART receive errors; sampled heap usage matched the earlier 5-second value.
+No image was flashed by the implementation task. Full evidence and remaining
+soak/fault checks are recorded in docs/validation.md.
 The current dependency set targets ESP32 revision 3.0 and later; verify the
 board revision before flashing.

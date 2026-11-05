@@ -23,11 +23,33 @@
 
 ## Hardware evidence
 
-The user confirmed the original foundation boots on COM3: ESP32 revision 3.1,
-40 MHz crystal, and 4 MB flash. Flash verification completed successfully and
-the radio initialized. This evidence predates the interactive CLI changes.
+On 2026-11-05, the user confirmed the CLI firmware on COM3: ESP32 revision 3.1,
+40 MHz crystal, and 4 MB flash. The user reports all performed acceptance tests
+passed. The supplied serial transcripts directly establish these results:
 
-## CLI hardware acceptance (pending)
+| Check | Observed result |
+|---|---|
+| Boot, prompt, help, and status | Readable UART0 output; initialized radio; uptime advances |
+| Invalid arguments | `status extra` returns an error and a prompt |
+| Repeated scans | Watch produced repeated full scans; another watch returns Busy |
+| Stop | `stop` returns `Watch stopped.`; subsequent status shows Watch off and scanner idle |
+| Active full scan | Scan 18 completed in 1346 ms and reported a channel-4 AP |
+| Channel filter | Scan 19 on channel 6 completed in 306 ms and returned a channel-6 AP |
+| Passive full scan | Scan 20 completed in 3340 ms |
+| Cached networks | Reused scan 20 with age 5897 ms, without a new scan |
+| Channels | Reused scan 20 with age 9450 ms; channel-4 count and RSSI match its observation |
+| Status counters | At 210 seconds: 17 successful scans, 0 failed scans, 0 UART receive errors |
+| Sampled heap usage | At 5 and 210 seconds: used 44572 bytes, free 54196 bytes |
+
+Identical sampled heap values support the short-run check; they do not replace
+a measured multi-hour soak. Per-BSSID history and other checks are covered by
+automated tests; no history command transcript was included in this report.
+
+## CLI hardware acceptance (user-reported pass; procedure retained)
+
+The user reports the performed CLI checks passed. Keep the following procedure
+for regression testing. Controlled UART faults and the specific queued-stop
+race are separate targeted checks, not implied by ordinary interactive use.
 
 1. Close the old monitor and flash the CLI image on COM3.
 2. At 115200 baud, verify a readable banner and a single `wifi>` prompt.
@@ -43,10 +65,18 @@ the radio initialized. This evidence predates the interactive CLI changes.
 8. Repeat help/status for several minutes; confirm no resets, prompt corruption,
    or progressive heap loss. If testing UART faults, verify discard/recovery and
    the UART receive-error counter using a controlled serial test setup.
-9. Paste `watch` followed immediately by `stop`; verify the queued watch does
-   not start later. A subsequent new watch command should still work.
+9. Submit `watch` followed by `stop`. If a scan has started, it may finish;
+   verify no additional watch attempt starts afterward and status shows Watch
+   off. This ordinary stop behavior passed in the supplied transcript.
+   To specifically exercise cancellation of an already queued watch, send both
+   lines in one serial write and observe the result; manual typing cannot
+   guarantee that ordering. The sequence-cutoff case has a host regression test.
 
-## Scan, history, and watch acceptance (pending)
+## Scan, history, and watch regression procedure
+
+Full/channel/passive scanning, cached reports, channel summaries, ordinary
+watch/stop, and short-run telemetry passed as recorded above. Keep the broader
+procedure below for subsequent regression and additional coverage.
 
 - Confirm chip revision and board flash size with espflash board-info.
 - Boot and verify UART0 output at 115200 without resets.
@@ -72,5 +102,13 @@ the radio initialized. This evidence predates the interactive CLI changes.
 - Record heap low-water mark, stack/future allocations, scan durations, and
   uptime during a multi-hour repeated-scan run.
 
-Build success does not establish radio behavior or board compatibility.
-Interactive CLI and scan checks remain pending until performed on the actual board.
+## Additional evidence still needed
+
+- Multi-hour scan/watch soak with heap low-water and stack/future measurements.
+- Controlled UART/driver fault recovery and snapshot retention after failure.
+- Crowded/capped scans, history eviction, and missing/incomplete observations.
+- A targeted single-write queued-watch/stop test if hardware evidence for that
+  exact ordering is required, rather than the existing host regression test.
+
+Build success does not establish hardware behavior. This document distinguishes
+the user's reported pass, direct serial evidence, and additional coverage.
