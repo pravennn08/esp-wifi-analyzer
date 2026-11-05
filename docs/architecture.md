@@ -16,17 +16,22 @@ implementation or a substantive testing need justifies them.
 ```mermaid
 flowchart LR
     PC[Serial terminal] <--> Console[Console task: UART0 RX/TX]
-    Console -->|bounded requests| App[Application task: state + radio owner]
-    App --> Radio[Radio adapter / esp-radio]
+    Console -->|bounded requests| App[Application task: state and scheduling]
+    App -->|single scan job| Worker[Radio worker task]
+    Worker --> Radio[Radio adapter / esp-radio]
     Radio --> HAL[esp-hal / ESP32]
+    Worker -->|completed snapshot| App
     App --> Core[analyzer-core: models + history + analysis]
     App -->|bounded replies| Console
 ```
 
 The console task, command dispatch, and bounded streaming replies are implemented.
-The application task owns radio operations, latest successful snapshot, history,
-watch scheduling, and report generation. The console owns line editing and UART
-output, preserving the current edited line as asynchronous reports arrive.
+The application task owns latest successful snapshot, history, watch scheduling,
+and report generation. A dedicated radio worker owns the controller and awaits
+every scan to completion; bounded single-entry job/result queues connect it to
+the application. Status and cached queries remain serviceable while it scans.
+The console owns line editing and UART output, preserving the current edited
+line as asynchronous reports arrive.
 Use Embassy with esp-rtos's integration; do not add a second executor architecture
 or scheduler. Run the application on one core initially.
 
@@ -34,12 +39,12 @@ or scheduler. Run the application on one core initially.
 
 | Resource | Sole owner | Policy |
 |---|---|---|
-| WIFI / WifiController | application task | One outstanding scan |
+| WIFI / WifiController | radio worker task | One outstanding scan; never cancel its driver future |
 | AnalyzerState / latest snapshot / history | application task | Mutation via commands |
 | UART0 RX and ordinary TX | console task | One writer; ASCII command echo |
 | Request queue | console producer / application consumer | 4 entries; reject with Busy when full |
 | Response queue | application producer / console consumer | 2 entries; bounded streamed chunks with explicit report completion |
-| Watch stop signal | console producer / application consumer | Dedicated signal; active scans finish safely |
+| Watch stop signal | console producer / application consumer | Sequence cutoff cancels queued watches too; active scans finish safely |
 
 Do not send full scan snapshots through every queue. Stream bounded report
 chunks or use a preallocated report buffer with explicit ownership. Do not hold

@@ -282,3 +282,16 @@ fn forwarded_control_c_and_control_x_request_stop_but_control_u_only_clears() {
     let mut editor = LineEditor::<4>::default();
     assert_eq!(editor.push(21), InputEvent::Cancelled);
 }
+
+#[test]
+fn urgent_stop_rejects_already_queued_watch_but_allows_new_watch() {
+    use analyzer_core::watch::request_precedes;
+    // watch request 7 was queued; stop arrives before it reaches the app.
+    assert!(request_precedes(7, 8));
+    assert!(!request_precedes(8, 8));
+    assert!(!request_precedes(9, 8));
+    // The same ordering must hold when request numbering wraps.
+    assert!(request_precedes(u32::MAX, 0));
+    assert!(request_precedes(u32::MAX - 1, 1));
+    assert!(!request_precedes(0, u32::MAX));
+}

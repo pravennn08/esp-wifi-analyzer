@@ -1,18 +1,18 @@
-# Setup report â€” 2026-11-05
+# Setup report 2026-11-05
 
 Target directory: `C:\Users\Raven\Documents\Projects\hardware\esp-wifi-analyzer`
 Target chip: classic ESP32 / WROOM-32, Xtensa, 2.4 GHz.
 
 ## Standard per-user installation
 
-| Tool | Version | Location |
-|---|---|---|
-| Host Rust stable | 1.99.1 | %USERPROFILE%\.rustup |
-| Xtensa Rust (`esp`) | 1.97.0.0 / rustc 1.97.0-nightly | %USERPROFILE%\.rustup\toolchains\esp |
-| Xtensa GCC | esp-16.1.0_20260609 | Inside the esp toolchain |
-| espup | 0.19.0 | %USERPROFILE%\.cargo\bin |
-| espflash | 4.7.0 | %USERPROFILE%\.cargo\bin |
-| esp-generate (optional) | 2.0.0 | %USERPROFILE%\.cargo\bin |
+| Tool                    | Version                         | Location                             |
+| ----------------------- | ------------------------------- | ------------------------------------ |
+| Host Rust stable        | 1.99.1                          | %USERPROFILE%\.rustup                |
+| Xtensa Rust (`esp`)     | 1.97.0.0 / rustc 1.97.0-nightly | %USERPROFILE%\.rustup\toolchains\esp |
+| Xtensa GCC              | esp-16.1.0_20260609             | Inside the esp toolchain             |
+| espup                   | 0.19.0                          | %USERPROFILE%\.cargo\bin             |
+| espflash                | 4.7.0                           | %USERPROFILE%\.cargo\bin             |
+| esp-generate (optional) | 2.0.0                           | %USERPROFILE%\.cargo\bin             |
 
 The user installed standard Rust after the initial project bootstrap. The
 previously validated ESP32 compiler, linker, and Espressif CLI binaries were
@@ -48,9 +48,14 @@ Validation using the standard per-user Rust installation:
 
 The user subsequently flashed the foundation successfully on COM3 and confirmed
 boot/radio initialization on an ESP32 revision 3.1 with 4 MB flash.
-The help/status CLI milestone is now implemented, with 12 host tests passing
-and development/release firmware builds linked successfully. Its board checks
-are pending; no new image was flashed by the implementation task. Actual scan
-execution remains the next milestone.
+The full command set is implemented: help, status, active/passive/channel scan,
+networks, watch, stop, history, and channels. Thirty-three host tests cover
+parsing, safe line editing, report bounds, scan retention, history eligibility,
+watch cadence, and urgent-stop ordering. Development/release firmware builds
+and host/firmware Clippy pass locally. The workflow has Linux host checks and
+Windows ESP32 build/lint checks, and was validated with actionlint.
+Updated CLI/radio behavior still needs board acceptance; no new image was
+flashed by the implementation task. Flash the new image and follow
+docs/validation.md before describing its hardware behavior as verified.
 The current dependency set targets ESP32 revision 3.0 and later; verify the
 board revision before flashing.

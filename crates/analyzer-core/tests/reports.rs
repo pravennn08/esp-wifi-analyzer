@@ -116,7 +116,10 @@ fn empty_channel_scan_does_not_claim_a_channel_is_best() {
 fn history_reports_signed_rssi_statistics_and_saturating_ages() {
     let mut store = HistoryStore::default();
     let ap = access_point(1, 6, -43, b"Lab");
-    store.observe(&scan(ScanCoverage::AllConfiguredChannels, core::slice::from_ref(&ap)));
+    store.observe(&scan(
+        ScanCoverage::AllConfiguredChannels,
+        core::slice::from_ref(&ap),
+    ));
     let mut second = scan(
         ScanCoverage::AllConfiguredChannels,
         &[AccessPoint {

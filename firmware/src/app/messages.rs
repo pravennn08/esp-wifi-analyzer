@@ -16,9 +16,15 @@ pub struct Request {
     pub command: Command,
 }
 
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Fixed-size static queue storage avoids heap allocation per report chunk"
+)]
 pub enum ReplyKind {
     Text(String<STATUS_REPORT_BYTES>),
     Status(StatusSnapshot),
+    /// A nonterminal notice followed by a prompt while the operation runs.
+    Progress(&'static str),
 }
 
 pub struct Reply {
@@ -40,6 +46,7 @@ pub struct ScanResult {
 pub static REQUESTS: Channel<CriticalSectionRawMutex, Request, REQUEST_QUEUE_DEPTH> =
     Channel::new();
 pub static REPLIES: Channel<CriticalSectionRawMutex, Reply, RESPONSE_QUEUE_DEPTH> = Channel::new();
-pub static STOP: Signal<CriticalSectionRawMutex, ()> = Signal::new();
+/// The cutoff rejects watch commands queued before an urgent stop was received.
+pub static STOP: Signal<CriticalSectionRawMutex, u32> = Signal::new();
 pub static SCAN_JOBS: Channel<CriticalSectionRawMutex, ScanJob, 1> = Channel::new();
 pub static SCAN_RESULTS: Channel<CriticalSectionRawMutex, ScanResult, 1> = Channel::new();

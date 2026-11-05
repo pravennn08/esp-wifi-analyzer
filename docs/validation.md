@@ -17,6 +17,9 @@
   empty observations, incomplete-result warnings, filtered-scan channel refusal,
   signed RSSI statistics, and worst-case chunk-size budgets.
 - Link an actual Xtensa firmware ELF, not only `cargo check`.
+- `Host checks` runs host formatting/tests/Clippy on Linux and combined
+  host/firmware checks plus release linking on Windows. Validate workflow YAML
+  with actionlint when changing it. Local success is not a remote CI result.
 
 ## Hardware evidence
 
@@ -40,6 +43,8 @@ the radio initialized. This evidence predates the interactive CLI changes.
 8. Repeat help/status for several minutes; confirm no resets, prompt corruption,
    or progressive heap loss. If testing UART faults, verify discard/recovery and
    the UART receive-error counter using a controlled serial test setup.
+9. Paste `watch` followed immediately by `stop`; verify the queued watch does
+   not start later. A subsequent new watch command should still work.
 
 ## Scan, history, and watch acceptance (pending)
 

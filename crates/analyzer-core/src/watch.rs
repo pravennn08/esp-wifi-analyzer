@@ -1,6 +1,13 @@
 //! Monotonic scan scheduling, independent of executors and driver futures.
 use crate::model::WatchOptions;
 
+/// Sequence comparison for the bounded console queue, including u32 wraparound.
+/// Requests cannot remain outstanding for half the sequence-number space.
+pub fn request_precedes(request_id: u32, cutoff: u32) -> bool {
+    let distance = cutoff.wrapping_sub(request_id);
+    distance != 0 && distance < (1 << 31)
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct WatchSchedule {
     options: WatchOptions,

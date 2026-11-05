@@ -2,17 +2,42 @@ name: Host checks
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   core:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - name: Install host Rust components
         run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
       - run: cargo +stable fmt --all -- --check
       - run: cargo +stable test -p analyzer-core --locked
       - run: cargo +stable clippy -p analyzer-core --all-targets --locked -- -D warnings
+
+  firmware:
+    name: ESP32 firmware
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Install host Rust components
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+      - name: Install pinned ESP32 Xtensa toolchain
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $espup = Join-Path $env:RUNNER_TEMP 'espup.exe'
+          Invoke-WebRequest -Uri 'https://github.com/esp-rs/espup/releases/download/v0.19.0/espup-x86_64-pc-windows-msvc.exe' -OutFile $espup
+          & $espup install --targets esp32 --toolchain-version 1.97.0.0 --crosstool-toolchain-version 16.1.0_20260609 --export-file (Join-Path $env:RUNNER_TEMP 'export-esp.ps1')
+          if ($LASTEXITCODE -ne 0) { throw 'ESP32 toolchain installation failed' }
+      - name: Run host and firmware checks
+        run: .\scripts\check.ps1
+      - name: Link release firmware
+        run: .\scripts\build.ps1 -Release

@@ -11,7 +11,7 @@ use analyzer_core::{
     error::ScanError,
     model::{ScanOptions, ScanSnapshot},
     state::{AnalyzerState, RadioState, ScannerState, StatusSnapshot},
-    watch::WatchSchedule,
+    watch::{WatchSchedule, request_precedes},
 };
 use core::fmt::{self, Write};
 use embassy_futures::select::{Either4, select4};
@@ -60,6 +60,7 @@ pub async fn analyzer(radio_state: RadioState) {
     let mut watch: Option<WatchSchedule> = None;
     let mut in_flight: Option<InFlight> = None;
     let mut next_scan_id = 1u32;
+    let mut stop_cutoff = None;
 
     loop {
         let due_ms = if in_flight.is_none() {
@@ -77,7 +78,8 @@ pub async fn analyzer(radio_state: RadioState) {
         )
         .await
         {
-            Either4::First(()) => {
+            Either4::First(cutoff) => {
+                stop_cutoff = Some(cutoff);
                 let was_watching = watch.take().is_some();
                 send_text(None, true, stop_text(was_watching, in_flight.is_some())).await;
             }
@@ -87,13 +89,13 @@ pub async fn analyzer(radio_state: RadioState) {
                 };
                 state.scanner = ScannerState::Idle;
                 let mut finished_watch = None;
-                if origin.watch {
-                    if let Some(schedule) = watch.as_mut() {
-                        schedule.record_attempt(result.started_at_ms, result.completed_at_ms);
-                        if schedule.finished() {
-                            finished_watch = Some(schedule.completed_attempts());
-                            watch = None;
-                        }
+                if origin.watch
+                    && let Some(schedule) = watch.as_mut()
+                {
+                    schedule.record_attempt(result.started_at_ms, result.completed_at_ms);
+                    if schedule.finished() {
+                        finished_watch = Some(schedule.completed_attempts());
+                        watch = None;
                     }
                 }
                 match result.result {
@@ -181,9 +183,16 @@ pub async fn analyzer(radio_state: RadioState) {
                                 complete: false,
                             })
                             .await;
-                        send_formatted(id, true, |out| write!(out,
-                            "Watch: {}\r\nTracked history APs: {}\r\nHistory evictions: {}\r\nConfigured scan channels: 1..11\r\n",
-                            if watch.is_some() { "active" } else { "off" }, history.len(), history.evictions())).await;
+                        send_formatted(id, true, |out| {
+                            write!(
+                                out,
+                                "Watch: {}\r\nTracked history APs: {}\r\nHistory evictions: {}\r\n",
+                                if watch.is_some() { "active" } else { "off" },
+                                history.len(),
+                                history.evictions()
+                            )
+                        })
+                        .await;
                     }
                     Command::Scan(options) => {
                         if radio_state != RadioState::Initialized
@@ -196,14 +205,14 @@ pub async fn analyzer(radio_state: RadioState) {
                         {
                             send_text(id, true, scan_error_text(ScanError::UnsupportedChannel))
                                 .await;
-                        } else if in_flight.is_some() || watch.is_some() {
-                            send_text(id, true, scan_error_text(ScanError::Busy)).await;
-                        } else if SCAN_JOBS
-                            .try_send(ScanJob {
-                                id: next_scan_id,
-                                options,
-                            })
-                            .is_err()
+                        } else if in_flight.is_some()
+                            || watch.is_some()
+                            || SCAN_JOBS
+                                .try_send(ScanJob {
+                                    id: next_scan_id,
+                                    options,
+                                })
+                                .is_err()
                         {
                             send_text(id, true, scan_error_text(ScanError::Busy)).await;
                         } else {
@@ -213,11 +222,19 @@ pub async fn analyzer(radio_state: RadioState) {
                                 request_id: id,
                                 watch: false,
                             });
-                            send_text(id, false, "Scanning...\r\n").await;
+                            REPLIES
+                                .send(Reply {
+                                    request_id: id,
+                                    kind: ReplyKind::Progress("Scanning...\r\n"),
+                                    complete: false,
+                                })
+                                .await;
                         }
                     }
                     Command::Watch(options) => {
-                        if radio_state != RadioState::Initialized
+                        if stop_cutoff.is_some_and(|cutoff| request_precedes(request.id, cutoff)) {
+                            send_text(id, true, "Queued watch cancelled by stop.\r\n").await;
+                        } else if radio_state != RadioState::Initialized
                             || state.scanner == ScannerState::Faulted
                         {
                             send_text(id, true, "Error: radio unavailable; reset the device to retry initialization.\r\n").await;

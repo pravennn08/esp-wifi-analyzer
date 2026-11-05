@@ -66,6 +66,12 @@ pub async fn run(uart: Uart<'static, Async>) -> ! {
                     out.write(b"\r\x1b[2K").await;
                 }
                 match reply.kind {
+                    ReplyKind::Progress(text) => {
+                        out.write(text.as_bytes()).await;
+                        report_active = false;
+                        out.prompt(editor.line()).await;
+                        continue;
+                    }
                     ReplyKind::Text(text) => out.write(text.as_bytes()).await,
                     ReplyKind::Status(status) => {
                         report.clear();
@@ -119,7 +125,7 @@ pub async fn run(uart: Uart<'static, Async>) -> ! {
                     match event {
                         InputEvent::StopRequested | InputEvent::Command(Command::Stop) => {
                             // An urgent stop remains available even if requests are full.
-                            STOP.signal(());
+                            STOP.signal(next_request_id);
                         }
                         InputEvent::Command(command) => {
                             let id = next_request_id;

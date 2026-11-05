@@ -73,8 +73,10 @@ registry modification is needed to build. The target linker flags are scoped
 to Xtensa so they do not affect host tests.
 
 The combined check script runs formatting, host tests, core Clippy, the
-firmware build, and firmware Clippy. Host-only CI uses ordinary stable Rust; embedded CI also needs
-the Xtensa toolchain.
+firmware build, and firmware Clippy. The GitHub Actions workflow has a Linux
+host job and a Windows ESP32 job. The latter installs the pinned Xtensa
+compiler/linker, runs the combined checks, and links the release image.
+Both jobs use Cargo.lock; neither job flashes a physical board.
 
 Dependencies start from esp-generate 2.0.0's ESP32 + Wi-Fi + Embassy template:
 esp-hal ~1.2.2, esp-radio =1.0.0-beta.1, esp-rtos 0.4.0, esp-alloc 0.11.0.
@@ -86,9 +88,9 @@ with Embassy; it does not use esp-idf-hal or FreeRTOS.
 
 1. Foundation: tooling, compileable boot, ownership and capacity contracts.
 2. Interactive UART CLI (implemented): help/status, bounded input, robust line handling.
-3. Scan adapter: driver conversion, full snapshots, escaped report formatting.
-4. Cached reports and channel summaries with coverage/completeness handling.
-5. Watch/history with cancellation policy and deterministic eviction.
+3. Scan adapter (implemented): real driver scans, full snapshots, escaped reports.
+4. Cached reports/channels (implemented): age, coverage, and incompleteness warnings.
+5. Watch/history (implemented): safe stop ordering and deterministic history eviction.
 6. Hardware soak tests, memory measurements, and v0.1 release notes.
 
 No hardware flashing is part of tooling setup. Check the chip revision and
@@ -102,13 +104,36 @@ Close the old serial monitor, then build/flash the new image:
 .\scripts\flash.ps1 -Port COM3
 ```
 
-Once the `wifi>` prompt appears in the monitor, enter `help` and `status`.
+Once the `wifi>` prompt appears, try commands in the monitor:
+
+```text
+help
+status
+scan
+networks
+channels
+scan --channel 6
+scan --passive
+watch --interval 10s --count 3
+history 02:11:22:33:44:55
+stop
+```
+
+Replace the example BSSID with one returned by your scan. Full scans sweep
+configured channels 1..11; channel 12..14 requests are rejected. Passive dwell
+is 300 ms per channel; active dwell is 100..300 ms. The first watch scan starts
+immediately. Count includes failed attempts; missed deadlines are skipped.
+Only one scan runs at a time. Status and cached queries remain usable during
+a scan. A filtered scan replaces the cached snapshot, so `channels` asks for
+a new full scan after `scan --channel 6`.
+
 The device performs its own echo; disable local echo in other serial clients.
 If using another terminal, select 115200 baud, 8 data bits, no parity, 1 stop
 bit, and no hardware flow control. CR, LF, and CRLF are supported.
 
 The espflash monitor reserves Ctrl+C to exit and Ctrl+R to reset the board.
-Use Ctrl+U to clear the device's current line. Ctrl+C clears it only when a
-different terminal forwards that byte. Arrow keys/history and Unicode command
-arguments are not supported in this milestone. See docs/validation.md for the
+Use `stop` or Ctrl+X to stop future watch scans while the current scan finishes.
+Forwarded Ctrl+C also requests stop; it exits espflash instead. Ctrl+U only
+clears the line. Arrow-key editing and Unicode command arguments are not
+supported. RSSI `history` is supported. See docs/validation.md for the
 manual CLI acceptance checks. Automated tests do not replace these board checks.
