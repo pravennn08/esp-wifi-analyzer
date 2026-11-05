@@ -36,6 +36,8 @@ reports version `0.1.0`; that build identifier alone does not indicate a release
 - Architecture, development, CLI, and hardware-validation documentation.
 - GitHub bug-report and feature-request forms, contributor guidelines, and a
   project code of conduct.
+- Root security policy covering maintained builds, vulnerability reporting,
+  disclosure handling, and firmware trust boundaries.
 
 ### Changed
 

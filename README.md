@@ -98,3 +98,9 @@ available for bug reports and feature requests.
 
 Project participation follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 See the [changelog](CHANGELOG.md) for user-facing changes and current limits.
+
+## Security
+
+Read [SECURITY.md](SECURITY.md) for supported builds, vulnerability reporting,
+disclosure handling, and the firmware's trust boundaries. Do not post
+vulnerability details or sensitive diagnostic data in public issues.

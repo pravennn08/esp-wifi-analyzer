@@ -22,6 +22,9 @@ and validation; do not assume every ESP32-family board is supported.
 
 ## Issues and feature requests
 
+For suspected vulnerabilities, follow [SECURITY.md](SECURITY.md) instead of
+posting technical details in a public issue or pull request.
+
 Use the GitHub issue forms for a [bug report](https://github.com/pravennn08/esp-wifi-analyzer/issues/new?template=bug_report.yml)
 or [feature request](https://github.com/pravennn08/esp-wifi-analyzer/issues/new?template=feature_request.yml).
 

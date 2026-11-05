@@ -6,6 +6,7 @@ body:
     attributes:
       value: |
         Search existing issues first and read the [contribution guide](https://github.com/pravennn08/esp-wifi-analyzer/blob/main/CONTRIBUTING.md).
+        For a suspected vulnerability, follow [SECURITY.md](https://github.com/pravennn08/esp-wifi-analyzer/blob/main/SECURITY.md) instead of sharing details here. This form creates a public issue.
         Redact Wi-Fi passwords, private network names, BSSIDs, and device MAC addresses from public logs.
   - type: input
     id: version
