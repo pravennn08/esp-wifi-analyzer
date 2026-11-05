@@ -6,3 +6,6 @@ pub const REQUEST_QUEUE_DEPTH: usize = 4;
 pub const RESPONSE_QUEUE_DEPTH: usize = 2;
 
 pub const STATUS_REPORT_BYTES: usize = 1024;
+pub const DEFAULT_WATCH_INTERVAL_SECS: u32 = 10;
+pub const MAX_WATCH_INTERVAL_SECS: u32 = 3600;
+pub const MAX_WATCH_COUNT: u32 = 1000;

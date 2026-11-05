@@ -80,7 +80,7 @@ fn cancel_recovers_even_after_overflow() {
     assert_eq!(
         submit(&mut editor, b"longcommand\x03help\nxxx\x15help\n"),
         vec![
-            InputEvent::Cancelled,
+            InputEvent::StopRequested,
             InputEvent::Command(Command::Help),
             InputEvent::Cancelled,
             InputEvent::Command(Command::Help),
@@ -149,7 +149,7 @@ fn status_report_fits_its_budget_at_maximum_counter_values() {
     write_status(&mut out, "0.1.0", &status).unwrap();
     assert!(out.contains("Radio: initialized\r\n"));
     assert!(out.contains("Scanner: idle\r\n"));
-    assert!(out.contains("Scan execution: not implemented"));
+    assert!(out.contains("Configured scan channels: 1..11"));
     status.radio = RadioState::Failed;
     status.scanner = ScannerState::Faulted;
     status.last_scan_duration_ms = None;

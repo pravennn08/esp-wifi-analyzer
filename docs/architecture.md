@@ -23,10 +23,10 @@ flowchart LR
     App -->|bounded replies| Console
 ```
 
-The console task and bounded status request/reply channels are implemented.
-The console handles help and command editing locally; status is an immutable
-snapshot produced by the application task, which retains sole ownership of
-the radio and analyzer state. Scan execution remains a future milestone.
+The console task, command dispatch, and bounded streaming replies are implemented.
+The application task owns radio operations, latest successful snapshot, history,
+watch scheduling, and report generation. The console owns line editing and UART
+output, preserving the current edited line as asynchronous reports arrive.
 Use Embassy with esp-rtos's integration; do not add a second executor architecture
 or scheduler. Run the application on one core initially.
 
@@ -37,9 +37,9 @@ or scheduler. Run the application on one core initially.
 | WIFI / WifiController | application task | One outstanding scan |
 | AnalyzerState / latest snapshot / history | application task | Mutation via commands |
 | UART0 RX and ordinary TX | console task | One writer; ASCII command echo |
-| Request queue | console producer / application consumer | 4 entries; one pending status per console; reject with Busy when full |
-| Response queue | application producer / console consumer | 2 entries; awaited reliable command replies |
-| Optional periodic notices | application producer | Coalesce or drop with a counter |
+| Request queue | console producer / application consumer | 4 entries; reject with Busy when full |
+| Response queue | application producer / console consumer | 2 entries; bounded streamed chunks with explicit report completion |
+| Watch stop signal | console producer / application consumer | Dedicated signal; active scans finish safely |
 
 Do not send full scan snapshots through every queue. Stream bounded report
 chunks or use a preallocated report buffer with explicit ownership. Do not hold
@@ -47,17 +47,20 @@ a mutex across an await or mix normal `println!` output into interactive prompts
 Bootstrap/panic output is the only exception. A stalled terminal must not create
 unbounded reports or allocations.
 
-The console selects between cancellation-safe UART reads and status replies,
+The console selects between cancellation-safe UART reads and report replies,
 giving ready replies priority. It uses a 128-byte line editor and a 1024-byte
 report buffer, redraws an in-progress line after a status response, and writes
 all UART bytes through one TX owner. The transport loops over partial writes.
 No application mutex is held across an await.
 
 CR, LF, and CRLF are accepted; CRLF submits once. Backspace/Delete edit a valid
-line. Ctrl+U and forwarded Ctrl+C clear it. On overflow, unsupported input, or
+line. Ctrl+U clears it. Ctrl+X, `stop`, or forwarded Ctrl+C stops future watch
+repetitions after an active scan completes. On overflow, unsupported input, or
 UART receive error, discard until the line boundary or an explicit clear;
 never execute a truncated prefix. Current commands are ASCII; raw SSID data
-remains byte-oriented for the later scan implementation.
+remains byte-oriented in the model. Reports escape names to safe ASCII; when
+the pinned driver's public API truncates a malformed UTF-8 SSID, an explicit
+unavailable marker replaces the incomplete name.
 
 Radio initialization failure leaves the console operational and produces a
 faulted status. Current heap statistics are read as one allocator snapshot;
@@ -70,8 +73,10 @@ An unrecoverable driver state transitions to Faulted and requires controlled
 reinitialization. Keep the last successful snapshot on failure. Publish a new
 snapshot atomically only when all its observations have been normalized.
 
-Future watch scheduling uses absolute monotonic deadlines, skips missed deadlines,
-and never queues catch-up scans. Ctrl+C stops future repetition; do not drop an
+Watch scheduling uses absolute monotonic deadlines, skips missed deadlines,
+and never queues catch-up scans. A finite count includes successful and failed
+attempts, and the first attempt is due immediately. A stop request stops future
+repetition; do not drop an
 in-flight scan future unless driver cancellation safety has been established.
 A hard timeout needs a documented driver stop/recovery sequence, not just a
 timeout wrapper that silently cancels the operation.
@@ -91,8 +96,15 @@ timeout wrapper that silently cancels the operation.
 ## Memory and errors
 
 Initial limits: 32 APs per scan, 16 RSSI samples per tracked AP, 128 command
-bytes, 4 requests, 2 responses. A future AP history store evicts the least
+bytes, 4 requests, 2 responses, and a 1024-byte report chunk. The history store evicts the least
 recently observed entry deterministically and reports eviction counts.
+
+The configured scan set is channels 1..11. Full scans visit those channels
+individually and merge their observations; single-channel scans must remain
+inside the same configured set. This bounds observed coverage without assuming
+the user's location or claiming to change the pinned driver's default region.
+Only returned observations are sorted by RSSI; a result-cap warning preserves
+the distinction between these observations and all APs in the environment.
 
 The core allocates no heap. The radio does: startup uses the generator's
 98,768-byte reclaimed-RAM allocation. This is a starting point, not an established

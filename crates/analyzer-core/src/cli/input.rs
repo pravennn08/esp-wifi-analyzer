@@ -18,6 +18,7 @@ pub enum InputEvent {
     Echo(u8),
     Erase,
     Cancelled,
+    StopRequested,
     Empty,
     Command(Command),
     Rejected(LineError),
@@ -50,10 +51,14 @@ impl<const N: usize> LineEditor<N> {
             }
         }
 
-        if byte == 3 || byte == 21 {
+        if byte == 3 || byte == 24 || byte == 21 {
             self.bytes.clear();
             self.rejected = None;
-            return InputEvent::Cancelled;
+            return if byte == 21 {
+                InputEvent::Cancelled
+            } else {
+                InputEvent::StopRequested
+            };
         }
 
         if byte == b'\r' || byte == b'\n' {

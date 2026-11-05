@@ -6,20 +6,24 @@ the radio stack also uses Espressif wireless driver binaries.
 
 ## Current state
 
-The serial CLI milestone is implemented; the full v0.1 MVP is still in progress:
+The scan CLI is implemented; board acceptance testing remains in progress:
 
 - A two-crate workspace with a hardware-independent `no_std` library.
 - ESP32 startup, heap initialization, scheduler startup, radio initialization,
   and separate Embassy application/console tasks.
-- Interactive `help` and `status` commands on UART0 at 115200 baud.
-- Bounded command editing, clear input errors, and asynchronous status snapshots.
-- Core models, RSSI ring history, and AP summaries ready for the scan milestone.
+- UART0 commands: `help`, `status`, `scan`, `networks`, `watch`, `stop`,
+  `history`, and `channels` at 115200 baud.
+- Active/passive scans of configured channels 1..11, with results ordered by RSSI.
+- Cached snapshots with age/coverage, bounded per-BSSID RSSI history, and channel summaries.
+- Non-overlapping repeated scans, bounded command editing, and clear input errors.
 - Host contract tests, build/check/flash scripts, and architecture documentation.
 
-At the `wifi>` prompt, enter `help` or `status`. Status reports monotonic uptime,
-radio/scanner state, actual allocator usage, scan counters, and UART receive
-errors. Scan execution is the next milestone; `scan` currently reports that it
-is unavailable. Use Backspace to edit and Ctrl+U to clear the current line.
+At the `wifi>` prompt, enter `help` for syntax. `scan` collects fresh observations;
+`networks`, `history`, and `channels` inspect retained observations. `watch`
+repeats full scans; `stop` or Ctrl+X prevents further repeats after any active
+scan finishes. Use Backspace to edit and Ctrl+U to clear the current line.
+Results are observations at the board's location; AP counts do not measure
+airtime, throughput, packet loss, or actual channel utilization.
 
 ## Windows quick start
 
@@ -49,10 +53,17 @@ type commands there, rather than at the PowerShell prompt:
 ```text
 wifi> help
 wifi> status
+wifi> scan
+wifi> scan --channel 6 --passive
+wifi> networks
+wifi> watch --interval 10s --count 3
+wifi> history 02:11:22:33:44:55
+wifi> channels
+wifi> stop
 ```
 
 The previous foundation image booted successfully on the user's ESP32 revision
-3.1 with 4 MB flash. The new interactive CLI still needs its board acceptance
+3.1 with 4 MB flash. The scan CLI still needs its board acceptance
 checks. The implementation task builds the image without flashing the board.
 
 The current Espressif generator targets ESP32 revision 3.0 and later. Confirm

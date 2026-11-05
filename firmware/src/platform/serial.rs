@@ -1,10 +1,7 @@
 //! The console task exclusively owns both halves of UART0 and all ordinary output.
 use analyzer_core::{
-    cli::{
-        Command, InputEvent, LineEditor, LineError,
-        report::{HELP_TEXT, write_status},
-    },
-    config::{CLI_LINE_BYTES, STATUS_REPORT_BYTES},
+    cli::{Command, InputEvent, LineEditor, LineError, report::write_status},
+    config::{CLI_LINE_BYTES, REQUEST_QUEUE_DEPTH, STATUS_REPORT_BYTES},
     error::CommandError,
 };
 use core::fmt::Write;
@@ -14,10 +11,10 @@ use esp_hal::{
     Async,
     uart::{Uart, UartTx},
 };
-use heapless::String;
+use heapless::{String, Vec};
 
 use crate::{
-    app::messages::{REPLIES, REQUESTS, StatusRequest},
+    app::messages::{REPLIES, REQUESTS, ReplyKind, Request, STOP},
     diagnostics::{INTRO, PROMPT},
 };
 
@@ -48,7 +45,8 @@ pub async fn run(uart: Uart<'static, Async>) -> ! {
     let mut editor = LineEditor::<CLI_LINE_BYTES>::default();
     let mut input = [0u8; 1];
     let mut next_request_id = 0u32;
-    let mut pending = None;
+    let mut pending = Vec::<u32, REQUEST_QUEUE_DEPTH>::new();
+    let mut report_active = false;
     let mut rx_errors = 0u32;
     let mut report = String::<STATUS_REPORT_BYTES>::new();
 
@@ -60,22 +58,38 @@ pub async fn run(uart: Uart<'static, Async>) -> ! {
         // continuously pasted input cannot starve the application response.
         match select(REPLIES.receive(), rx.read_async(&mut input)).await {
             Either::First(reply) => {
-                if pending != Some(reply.request_id) {
+                if reply.request_id.is_some_and(|id| !pending.contains(&id)) {
                     continue;
                 }
-                pending = None;
-                report.clear();
-                let formatted = write_status(&mut report, env!("CARGO_PKG_VERSION"), &reply.status)
-                    .and_then(|()| write!(report, "UART receive errors: {rx_errors}\r\n"));
-                // Preserve any line being edited when an asynchronous reply arrives.
-                out.write(b"\r\x1b[2K").await;
-                if formatted.is_ok() {
-                    out.write(report.as_bytes()).await;
-                } else {
-                    out.write(b"Error: status report exceeded its buffer.\r\n")
-                        .await;
+                if !report_active {
+                    // Hide the editable line once, not between streamed report rows.
+                    out.write(b"\r\x1b[2K").await;
                 }
-                out.prompt(editor.line()).await;
+                match reply.kind {
+                    ReplyKind::Text(text) => out.write(text.as_bytes()).await,
+                    ReplyKind::Status(status) => {
+                        report.clear();
+                        let formatted =
+                            write_status(&mut report, env!("CARGO_PKG_VERSION"), &status).and_then(
+                                |()| write!(report, "UART receive errors: {rx_errors}\r\n"),
+                            );
+                        if formatted.is_ok() {
+                            out.write(report.as_bytes()).await;
+                        } else {
+                            out.write(b"Error: status report exceeded its buffer.\r\n")
+                                .await;
+                        }
+                    }
+                }
+                report_active = !reply.complete;
+                if reply.complete {
+                    if let Some(id) = reply.request_id
+                        && let Some(index) = pending.iter().position(|pending| *pending == id)
+                    {
+                        pending.swap_remove(index);
+                    }
+                    out.prompt(editor.line()).await;
+                }
             }
             Either::Second(Err(_)) => {
                 rx_errors = rx_errors.saturating_add(1);
@@ -88,31 +102,44 @@ pub async fn run(uart: Uart<'static, Async>) -> ! {
             Either::Second(Ok(0)) => {}
             Either::Second(Ok(_)) => match editor.push(input[0]) {
                 InputEvent::None => {}
-                InputEvent::Echo(byte) => out.write(&[byte]).await,
-                InputEvent::Erase => out.write(b"\x08 \x08").await,
+                InputEvent::Echo(byte) => {
+                    if !report_active {
+                        out.write(&[byte]).await;
+                    }
+                }
+                InputEvent::Erase => {
+                    if !report_active {
+                        out.write(b"\x08 \x08").await;
+                    }
+                }
                 event => {
-                    out.write(b"\r\n").await;
+                    if !report_active {
+                        out.write(b"\r\n").await;
+                    }
                     match event {
-                        InputEvent::Command(Command::Help) => out.write(HELP_TEXT.as_bytes()).await,
-                        InputEvent::Command(Command::Status) => {
+                        InputEvent::StopRequested | InputEvent::Command(Command::Stop) => {
+                            // An urgent stop remains available even if requests are full.
+                            STOP.signal(());
+                        }
+                        InputEvent::Command(command) => {
                             let id = next_request_id;
-                            if pending.is_some() || REQUESTS.try_send(StatusRequest { id }).is_err()
+                            if pending.is_full()
+                                || REQUESTS.try_send(Request { id, command }).is_err()
                             {
-                                out.write(b"Error: application busy. Try status again.\r\n")
+                                out.write(b"Error: request queue busy. Try again.\r\n")
                                     .await;
                             } else {
-                                pending = Some(id);
+                                let _ = pending.push(id);
                                 next_request_id = next_request_id.wrapping_add(1);
                             }
-                        }
-                        InputEvent::Command(Command::Scan(_)) => {
-                            out.write(b"Error: scan is not implemented yet. Type help for available commands.\r\n").await;
                         }
                         InputEvent::Rejected(error) => out.write(error_text(error)).await,
                         InputEvent::Cancelled => out.write(b"Line cleared.\r\n").await,
                         _ => {}
                     }
-                    out.prompt(&[]).await;
+                    if !report_active {
+                        out.prompt(&[]).await;
+                    }
                 }
             },
         }
