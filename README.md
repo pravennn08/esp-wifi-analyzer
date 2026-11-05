@@ -1,27 +1,20 @@
 <h1 align="center">ESP32 Wi-Fi Analyzer</h1>
 
 <p align="center">
-  Wi-Fi diagnostics for ESP32, built with Rust, esp-hal, and Embassy.
+  Wi-Fi diagnostics for ESP32, built with Rust and Embassy.
 </p>
 
 <p align="center">
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-F74C00?logo=rust&amp;logoColor=white" alt="Rust"></a>
   <a href="https://www.espressif.com/en/products/socs/esp32"><img src="https://img.shields.io/badge/ESP32-E7352C?logo=espressif&amp;logoColor=white" alt="ESP32"></a>
-  <a href="https://docs.espressif.com/projects/rust/book/"><img src="https://img.shields.io/badge/no__std-555555" alt="no_std"></a>
-  <a href="https://docs.rs/esp-hal"><img src="https://img.shields.io/badge/esp--hal-E7352C" alt="esp-hal"></a>
-  <a href="https://docs.rs/esp-radio"><img src="https://img.shields.io/badge/esp--radio-E7352C" alt="esp-radio"></a>
-  <a href="https://docs.rs/esp-rtos"><img src="https://img.shields.io/badge/esp--rtos-E7352C" alt="esp-rtos"></a>
   <a href="https://embassy.dev/"><img src="https://img.shields.io/badge/Embassy-1C7ED6" alt="Embassy"></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Apache--2.0-blue" alt="License: Apache-2.0"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Apache--2.0-purple" alt="License: Apache-2.0"></a>
   <a href="https://github.com/pravennn08/esp-wifi-analyzer/actions/workflows/host.yml"><img src="https://github.com/pravennn08/esp-wifi-analyzer/actions/workflows/host.yml/badge.svg?branch=main" alt="CI status"></a>
 </p>
 
 <p align="center">
   <a href="#overview">Overview</a> &middot;
-  <a href="#features">Features</a> &middot;
   <a href="#quick-start">Quick start</a> &middot;
-  <a href="#project-layout">Project layout</a> &middot;
-  <a href="#validation">Validation</a> &middot;
   <a href="#contributing">Contributing</a> &middot;
   <a href="CHANGELOG.md">Changelog</a> &middot;
   <a href="#security">Security</a> &middot;
@@ -41,18 +34,16 @@ The application runs in Rust's `no_std` environment using `esp-hal`, `esp-radio`
 `esp-rtos`, and Embassy. The wireless stack includes Espressif driver binaries.
 All commands run on the board through a serial terminal at **115200 baud**.
 
-## Features
-
-| Feature | What it provides |
-|---|---|
-| Network discovery | Active or passive scans across configured channels 1..11, or one selected channel |
-| Network details | SSID, BSSID, channel, RSSI, and advertised security, ordered by signal strength |
-| Cached observations | The latest successful snapshot with its age, duration, coverage, and completeness |
-| Repeated scans | Configurable watch interval and count, without overlapping scans |
-| RSSI history | Up to 16 samples per tracked AP, with min/average/max and observation ages |
-| Channel summaries | Observed AP counts and strongest signals from a full scan |
-| Device diagnostics | Uptime, radio/scanner state, heap usage, scan counters, and UART errors |
-| Bounded operation | Up to 32 APs per snapshot, 32 history entries, and fixed-capacity command/report buffers |
+| Feature             | What it provides                                                                         |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| Network discovery   | Active or passive scans across configured channels 1..11, or one selected channel        |
+| Network details     | SSID, BSSID, channel, RSSI, and advertised security, ordered by signal strength          |
+| Cached observations | The latest successful snapshot with its age, duration, coverage, and completeness        |
+| Repeated scans      | Configurable watch interval and count, without overlapping scans                         |
+| RSSI history        | Up to 16 samples per tracked AP, with min/average/max and observation ages               |
+| Channel summaries   | Observed AP counts and strongest signals from a full scan                                |
+| Device diagnostics  | Uptime, radio/scanner state, heap usage, scan counters, and UART errors                  |
+| Bounded operation   | Up to 32 APs per snapshot, 32 history entries, and fixed-capacity command/report buffers |
 
 Use `stop` or Ctrl+X to end watch repetition; any active scan finishes safely.
 Backspace edits the current command and Ctrl+U clears it. In the espflash
@@ -61,6 +52,10 @@ monitor, Ctrl+C exits the monitor.
 Channel summaries indicate AP presence at the board's location. They do not
 measure airtime, throughput, packet loss, or actual channel utilization.
 History is kept in RAM and resets when the board restarts.
+
+See the [architecture](docs/architecture.md) for the code structure,
+[CLI reference](docs/cli.md) for command details, and
+[validation record](docs/validation.md) for hardware results and remaining checks.
 
 ## Quick start
 
@@ -74,6 +69,7 @@ History is kept in RAM and resets when the board restarts.
 
 Follow the [development setup](docs/development.md) for installation and tested
 tool versions. Older ESP32 revisions need a separately validated dependency set.
+For common setup and serial issues, see [troubleshooting](docs/troubleshooting.md).
 
 ### Build and check
 
@@ -125,31 +121,6 @@ Replace the example BSSID with one returned by your scan. `networks` reads the
 cache; `scan` collects fresh observations. `channels` requires a full-scan
 snapshot, so run `scan` again after a channel-filtered scan if needed.
 See the [CLI contract](docs/cli.md) for options, limits, and editing behavior.
-
-## Project layout
-
-```text
-crates/analyzer-core/  Domain models, parser, analysis, host tests
-firmware/             Board startup, platform adapters, application tasks
-scripts/              Checks, build, explicit flashing
-docs/                 Architecture, CLI contract, development and validation
-```
-
-See [architecture](docs/architecture.md), [CLI contract](docs/cli.md),
-[development](docs/development.md), [validation](docs/validation.md),
-and the [initial setup report](docs/setup-report.md).
-
-## Validation
-
-Basic hardware acceptance passed on an ESP32 revision 3.1 with 4 MB flash:
-boot, help/status, watch/stop, active/channel/passive scanning, cached networks,
-and channel summaries. Multi-hour soak, crowded/capped environments, and
-controlled-fault checks need additional evidence.
-
-Host tests cover parsing, line editing, scheduling, history, scan retention,
-and report bounds. CI checks the core on Linux and builds/lints ESP32 firmware
-on Windows. The badge above reflects the workflow's status on `main`.
-See [validation.md](docs/validation.md) for recorded results and remaining checks.
 
 ## Contributing
 

@@ -12,6 +12,7 @@ Participation is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).
 - [README](README.md): supported hardware, features, and quick start.
 - [Architecture](docs/architecture.md): task ownership, memory, and errors.
 - [Development setup](docs/development.md): standard Rust and ESP32 toolchains.
+- [Troubleshooting](docs/troubleshooting.md): setup, flashing, and command issues.
 - [CLI contract](docs/cli.md): commands and serial behavior.
 - [Validation](docs/validation.md): automated checks and hardware evidence.
 
@@ -119,6 +120,9 @@ stability, or support for another board.
 
 ## Pull requests
 
+Use the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) to record the
+problem, changes, validation, and remaining limitations.
+
 Explain the problem and the resulting behavior. Reference related issues,
 describe how the change was validated, and mention remaining limitations.
 For CLI changes, include a short before/after command example. For resource
@@ -128,6 +132,19 @@ Keep generated build artifacts, local tool installations, credentials, and
 unrelated formatting changes out of the pull request. Keep discussion focused
 and respectful, and respond to review with the same validation evidence used
 to support the original change.
+
+## Dependency updates and line endings
+
+Dependabot checks Cargo and GitHub Actions monthly. Routine Rust patch/minor
+updates are grouped; the coupled Espressif, Embassy, Xtensa, and smoltcp stack
+is excluded from those proposals and must be upgraded in a deliberate change.
+Review security alerts separately, including for excluded dependencies. Update
+the pinned toolchain and CI setup when required, and run the firmware checks.
+No automatic merge workflow is configured.
+
+`.gitattributes` and `.editorconfig` use LF for text files across Windows and
+Linux. Binary assets remain binary. Avoid unrelated line-ending changes in a
+functional pull request.
 
 ## Licensing contributions
 

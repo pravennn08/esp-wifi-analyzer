@@ -40,6 +40,8 @@ reports version `0.1.0`; that build identifier alone does not indicate a release
   disclosure handling, and firmware trust boundaries.
 - Apache-2.0 project licensing with the official license text in `LICENSE.md`,
   inherited Cargo package metadata, SPDX source headers, and contribution terms.
+- Pull request template, consistent Git line-ending attributes, troubleshooting
+  guide, and monthly dependency-update proposals with explicit ESP stack review.
 
 ### Changed
 

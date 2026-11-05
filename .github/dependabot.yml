@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    # Upgrade the interdependent HAL/radio/runtime and target support together
+    # in a manually validated change. Do not let routine version PRs split them.
+    ignore:
+      - dependency-name: "esp-*"
+      - dependency-name: "embassy-*"
+      - dependency-name: "xtensa-*"
+      - dependency-name: smoltcp
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

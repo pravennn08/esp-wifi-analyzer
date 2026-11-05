@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Match .editorconfig on both Windows and Linux.
+* text=auto eol=lf
+
+# Keep binary assets and firmware artifacts unchanged.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.bin binary
+*.elf binary
+*.a binary
+*.exe binary
