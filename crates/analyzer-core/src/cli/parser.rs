@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use super::Command;
+use super::{
+    Command,
+    terminal::{MAX_TERMINAL_WIDTH, MIN_TERMINAL_WIDTH, TerminalCommand, TerminalLayout},
+};
 use crate::{
     config::{DEFAULT_WATCH_INTERVAL_SECS, MAX_WATCH_COUNT, MAX_WATCH_INTERVAL_SECS},
     error::CommandError,
@@ -35,6 +38,7 @@ pub fn parse(line: &str) -> Result<Command, CommandError> {
             Ok(Command::History(bssid))
         }
         "watch" => parse_watch_options(&mut tokens).map(Command::Watch),
+        "terminal" => parse_terminal_command(&mut tokens).map(Command::Terminal),
         "scan" => {
             let mut options = ScanOptions {
                 channel: None,
@@ -44,6 +48,34 @@ pub fn parse(line: &str) -> Result<Command, CommandError> {
             Ok(Command::Scan(options))
         }
         _ => Err(CommandError::UnknownCommand),
+    }
+}
+
+fn parse_terminal_command(
+    tokens: &mut core::str::SplitAsciiWhitespace<'_>,
+) -> Result<TerminalCommand, CommandError> {
+    let Some(setting) = tokens.next() else {
+        return Ok(TerminalCommand::Show);
+    };
+    let value = tokens.next().ok_or(CommandError::InvalidArguments)?;
+    if tokens.next().is_some() {
+        return Err(CommandError::InvalidArguments);
+    }
+    match (setting, value) {
+        ("color", "on") => Ok(TerminalCommand::Color(true)),
+        ("color", "off") => Ok(TerminalCommand::Color(false)),
+        ("width", value) => {
+            let width = usize::try_from(parse_unsigned(value)?)
+                .map_err(|_| CommandError::InvalidArguments)?;
+            if !(MIN_TERMINAL_WIDTH..=MAX_TERMINAL_WIDTH).contains(&width) {
+                return Err(CommandError::InvalidArguments);
+            }
+            Ok(TerminalCommand::Width(width))
+        }
+        ("layout", "auto") => Ok(TerminalCommand::Layout(TerminalLayout::Auto)),
+        ("layout", "table") => Ok(TerminalCommand::Layout(TerminalLayout::Table)),
+        ("layout", "compact") => Ok(TerminalCommand::Layout(TerminalLayout::Compact)),
+        _ => Err(CommandError::InvalidArguments),
     }
 }
 

@@ -3,6 +3,11 @@
 //! Reports use caller-owned fixed-capacity buffers or another fmt::Write sink.
 use core::fmt::{self, Write};
 
+use super::terminal::{
+    AnsiColor, MAX_TERMINAL_WIDTH, MIN_TERMINAL_WIDTH, TerminalLayout, TerminalSettings,
+    write_colored,
+};
+
 use crate::{
     analysis::{
         channels::summarize,
@@ -23,6 +28,10 @@ pub const HELP_TEXT: &str = concat!(
     "  stop                              Stop further watch scans\r\n",
     "  history <BSSID>                   Show retained RSSI observations\r\n",
     "  channels                          Summarize AP presence by channel\r\n",
+    "  terminal                          Show display settings\r\n",
+    "  terminal color <on|off>           Set ANSI colors\r\n",
+    "  terminal width <40..160>          Set the terminal column count\r\n",
+    "  terminal layout <auto|table|compact>  Choose the scan layout\r\n",
     "\r\n",
     "Enter submits a command. Backspace edits the current line.\r\n",
     "Ctrl+U clears a line. Ctrl+X stops watch; a running scan finishes.\r\n",
@@ -76,34 +85,130 @@ pub fn write_status(out: &mut impl Write, version: &str, status: &StatusSnapshot
     )
 }
 
-pub fn write_network_header(out: &mut impl Write, scan: &ScanSnapshot, now_ms: u64) -> fmt::Result {
-    write!(
-        out,
-        "Scan #{}; age: {} ms; duration: {} ms\r\nCoverage: ",
-        scan.id,
-        now_ms.saturating_sub(scan.completed_at_ms),
-        scan.duration_ms
-    )?;
+const CHANNEL_WIDTH: usize = 3;
+const RSSI_NUMBER_WIDTH: usize = 6;
+const RSSI_WIDTH: usize = RSSI_NUMBER_WIDTH + " dBm".len();
+const SECURITY_WIDTH: usize = "WPA2/WPA3-Personal".len();
+const BSSID_WIDTH: usize = 17;
+const FIXED_TABLE_WIDTH: usize = BSSID_WIDTH + CHANNEL_WIDTH + RSSI_WIDTH + SECURITY_WIDTH + 8;
+const SSID_HEADING: &str = "SSID (escaped)";
+
+fn table_ssid_width(settings: TerminalSettings) -> Option<usize> {
+    let width = settings.width.clamp(MIN_TERMINAL_WIDTH, MAX_TERMINAL_WIDTH);
+    if settings.layout == TerminalLayout::Compact || width < FIXED_TABLE_WIDTH + SSID_HEADING.len()
+    {
+        None
+    } else {
+        Some(width - FIXED_TABLE_WIDTH)
+    }
+}
+
+pub fn write_network_header(
+    out: &mut impl Write,
+    scan: &ScanSnapshot,
+    now_ms: u64,
+    settings: TerminalSettings,
+) -> fmt::Result {
+    let age = now_ms.saturating_sub(scan.completed_at_ms);
+    if settings.width >= 80 {
+        write!(
+            out,
+            "Scan #{}; age: {age} ms; duration: {} ms\r\n",
+            scan.id, scan.duration_ms
+        )?;
+    } else {
+        write!(
+            out,
+            "Scan #{}\r\nAge: {age} ms\r\nDuration: {} ms\r\n",
+            scan.id, scan.duration_ms
+        )?;
+    }
+    out.write_str("Coverage: ")?;
     write_coverage(out, scan.coverage)?;
-    out.write_str(
-        "\r\nConfigured scan channels: 1..11\r\nSSID (escaped) | BSSID | CH | RSSI | SECURITY\r\n",
-    )
+    out.write_str("\r\nConfigured scan channels: 1..11\r\n")?;
+    if !scan.access_points.is_empty()
+        && let Some(ssid_width) = table_ssid_width(settings)
+    {
+        write_colored(
+            out,
+            settings.color,
+            AnsiColor::Cyan,
+            format_args!(
+                "{SSID_HEADING:<ssid_width$}  {:<BSSID_WIDTH$}  {:>CHANNEL_WIDTH$}  {:>RSSI_WIDTH$}  SECURITY",
+                "BSSID", "CH", "RSSI"
+            ),
+        )?;
+        out.write_str("\r\n")?;
+    }
+    Ok(())
 }
 
-pub fn write_access_point(out: &mut impl Write, ap: &AccessPoint) -> fmt::Result {
-    write_ap_ssid(out, ap)?;
-    out.write_str(" | ")?;
-    write_bssid(out, ap.bssid)?;
-    write!(
-        out,
-        " | {} | {} dBm | {}\r\n",
-        ap.channel,
-        ap.rssi_dbm,
-        security_name(ap.security)
-    )
+pub fn write_access_point(
+    out: &mut impl Write,
+    ap: &AccessPoint,
+    settings: TerminalSettings,
+) -> fmt::Result {
+    // A 32-byte SSID takes at most 128 ASCII escape bytes plus two quotes.
+    let mut ssid = heapless::String::<130>::new();
+    write_ap_ssid(&mut ssid, ap)?;
+    if let Some(ssid_width) = table_ssid_width(settings) {
+        let (first, mut remaining) = split_ssid(&ssid, ssid_width);
+        write!(
+            out,
+            "{first:<ssid_width$}  {}  {:>CHANNEL_WIDTH$}  ",
+            ap.bssid, ap.channel
+        )?;
+        write_rssi(out, settings.color, ap.rssi_dbm, RSSI_NUMBER_WIDTH)?;
+        write!(out, "  {}\r\n", security_name(ap.security))?;
+        while !remaining.is_empty() {
+            let (line, rest) = split_ssid(remaining, ssid_width);
+            write!(out, "{line}\r\n")?;
+            remaining = rest;
+        }
+    } else {
+        let width = settings.width.clamp(MIN_TERMINAL_WIDTH, MAX_TERMINAL_WIDTH);
+        write_colored(out, settings.color, AnsiColor::Cyan, "SSID (escaped):")?;
+        out.write_str("\r\n")?;
+        let mut remaining = ssid.as_str();
+        while !remaining.is_empty() {
+            let (line, rest) = split_ssid(remaining, width);
+            write!(out, "{line}\r\n")?;
+            remaining = rest;
+        }
+        write!(out, "BSSID: {}\r\nCH: {}\r\nRSSI: ", ap.bssid, ap.channel)?;
+        write_rssi(out, settings.color, ap.rssi_dbm, 0)?;
+        write!(out, "\r\nSECURITY: {}\r\n\r\n", security_name(ap.security))?;
+    }
+    Ok(())
 }
 
-pub fn write_network_footer(out: &mut impl Write, scan: &ScanSnapshot) -> fmt::Result {
+/// Split rendered ASCII names only between complete escaped bytes.
+fn split_ssid(text: &str, width: usize) -> (&str, &str) {
+    let bytes = text.as_bytes();
+    let mut end = 0;
+    while end < bytes.len() {
+        let length = if bytes[end] == b'\\' {
+            if bytes.get(end + 1) == Some(&b'x') {
+                4
+            } else {
+                2
+            }
+        } else {
+            1
+        };
+        if end + length > width {
+            break;
+        }
+        end += length;
+    }
+    text.split_at(end)
+}
+
+pub fn write_network_footer(
+    out: &mut impl Write,
+    scan: &ScanSnapshot,
+    settings: TerminalSettings,
+) -> fmt::Result {
     if scan.access_points.is_empty() {
         out.write_str("No access points observed in this scan.\r\n")?;
     }
@@ -117,41 +222,50 @@ pub fn write_network_footer(out: &mut impl Write, scan: &ScanSnapshot) -> fmt::R
             "s"
         }
     )?;
-    write_incomplete_warning(out, scan)
+    write_incomplete_warning(out, scan, settings.color)
 }
 
-pub fn write_channels(out: &mut impl Write, scan: &ScanSnapshot, now_ms: u64) -> fmt::Result {
+pub fn write_channels(
+    out: &mut impl Write,
+    scan: &ScanSnapshot,
+    now_ms: u64,
+    settings: TerminalSettings,
+) -> fmt::Result {
+    let age = now_ms.saturating_sub(scan.completed_at_ms);
     let Ok(channels) = summarize(scan) else {
-        out.write_str("Error: channel summary requires a full scan. Run scan without --channel.\r\nLatest snapshot coverage: ")?;
-        write_coverage(out, scan.coverage)?;
-        return write!(
+        write_colored(
             out,
-            "; age: {} ms.\r\n",
-            now_ms.saturating_sub(scan.completed_at_ms)
-        );
+            settings.color,
+            AnsiColor::Red,
+            "Error: channel summary requires a full scan.",
+        )?;
+        out.write_str("\r\nRun scan without --channel.\r\nCoverage: ")?;
+        write_coverage(out, scan.coverage)?;
+        return write!(out, "\r\nAge: {age} ms\r\n");
     };
     write!(
         out,
-        "Channel summary from scan #{}; age: {} ms\r\n",
-        scan.id,
-        now_ms.saturating_sub(scan.completed_at_ms)
+        "Channel summary from scan #{}\r\nAge: {age} ms\r\n",
+        scan.id
     )?;
-    out.write_str("CHANNEL | OBSERVED APS | STRONGEST RSSI\r\n")?;
+    write_colored(
+        out,
+        settings.color,
+        AnsiColor::Cyan,
+        "CHANNEL  OBSERVED APS  STRONGEST RSSI",
+    )?;
+    out.write_str("\r\n")?;
     for (index, channel) in channels.iter().enumerate() {
         if let Some(rssi) = channel.strongest_rssi_dbm {
-            write!(
-                out,
-                "{} | {} | {} dBm\r\n",
-                index + 1,
-                channel.observed_aps,
-                rssi
-            )?;
+            write!(out, "{:>7}  {:>12}  ", index + 1, channel.observed_aps)?;
+            write_rssi(out, settings.color, rssi, 10)?;
+            out.write_str("\r\n")?;
         }
     }
     if scan.access_points.is_empty() {
         out.write_str("No APs observed; no channel ranking can be inferred.\r\n")?;
     }
-    write_incomplete_warning(out, scan)?;
+    write_incomplete_warning(out, scan, settings.color)?;
     out.write_str("AP presence indicates potential contention; airtime and traffic utilization are not measured.\r\n")
 }
 
@@ -193,21 +307,22 @@ pub fn write_history_header(
             sum / count as i32
         )?;
     }
-    out.write_str("SAMPLE AGE | RSSI\r\n")
+    write!(out, "{:>13}  {:>RSSI_WIDTH$}\r\n", "SAMPLE AGE", "RSSI")
 }
 
-pub fn write_history_sample(out: &mut impl Write, sample: &RssiSample, now_ms: u64) -> fmt::Result {
-    write!(
-        out,
-        "{} ms | {} dBm\r\n",
-        now_ms.saturating_sub(sample.at_ms),
-        sample.rssi_dbm
-    )
+pub fn write_history_sample(
+    out: &mut impl Write,
+    sample: &RssiSample,
+    now_ms: u64,
+    settings: TerminalSettings,
+) -> fmt::Result {
+    write!(out, "{:>10} ms  ", now_ms.saturating_sub(sample.at_ms))?;
+    write_rssi(out, settings.color, sample.rssi_dbm, RSSI_NUMBER_WIDTH)?;
+    out.write_str("\r\n")
 }
 
 pub fn write_bssid(out: &mut impl Write, bssid: Bssid) -> fmt::Result {
-    let [a, b, c, d, e, f] = bssid.0;
-    write!(out, "{a:02x}:{b:02x}:{c:02x}:{d:02x}:{e:02x}:{f:02x}")
+    write!(out, "{bssid}")
 }
 
 fn write_ap_ssid(out: &mut impl Write, ap: &AccessPoint) -> fmt::Result {
@@ -230,6 +345,15 @@ fn write_ap_ssid(out: &mut impl Write, ap: &AccessPoint) -> fmt::Result {
     out.write_char('"')
 }
 
+fn write_rssi(out: &mut impl Write, color: bool, rssi: i16, width: usize) -> fmt::Result {
+    let style = match rssi {
+        -60.. => AnsiColor::Green,
+        -75..=-61 => AnsiColor::Yellow,
+        _ => AnsiColor::Red,
+    };
+    write_colored(out, color, style, format_args!("{rssi:>width$} dBm"))
+}
+
 fn write_coverage(out: &mut impl Write, coverage: ScanCoverage) -> fmt::Result {
     match coverage {
         ScanCoverage::AllConfiguredChannels => out.write_str("all configured channels"),
@@ -237,9 +361,15 @@ fn write_coverage(out: &mut impl Write, coverage: ScanCoverage) -> fmt::Result {
     }
 }
 
-fn write_incomplete_warning(out: &mut impl Write, scan: &ScanSnapshot) -> fmt::Result {
+fn write_incomplete_warning(out: &mut impl Write, scan: &ScanSnapshot, color: bool) -> fmt::Result {
     if scan.possibly_incomplete {
-        out.write_str("Warning: result limit reached; list may be incomplete.\r\n")?;
+        write_colored(
+            out,
+            color,
+            AnsiColor::Yellow,
+            "Warning: result limit reached; list may be incomplete.",
+        )?;
+        out.write_str("\r\n")?;
     }
     Ok(())
 }

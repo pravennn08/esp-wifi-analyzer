@@ -6,6 +6,17 @@ Git tags using the `vMAJOR.MINOR.PATCH` format.
 
 ## [Unreleased]
 
+### Added
+
+- Session settings for ANSI colors, terminal width, and scan report layout.
+  Colors are enabled at startup and can be disabled with `terminal color off`.
+
+### Changed
+
+- The serial prompt is now `esp-wifi>`. Scan results use aligned
+  columns without vertical separators and a compact layout for narrow terminals.
+  Original fields and complete escaped SSIDs are retained across wrapped lines.
+
 ## [0.1.0] - 2026-11-05
 
 Initial MVP release for the classic ESP32 / WROOM-32.

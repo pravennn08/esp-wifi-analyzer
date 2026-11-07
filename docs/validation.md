@@ -52,7 +52,7 @@ for regression testing. Controlled UART faults and the specific queued-stop
 race are separate targeted checks, not implied by ordinary interactive use.
 
 1. Close the old monitor and flash the CLI image on COM3.
-2. At 115200 baud, verify a readable banner and a single `wifi>` prompt.
+2. At 115200 baud, verify a readable banner and a single `esp-wifi>` prompt.
 3. Enter `help`, then `status`; verify radio state, rising uptime, and sensible
    heap values. Before the first scan, successful scan count should be zero and
    last scan duration `none`.
@@ -101,6 +101,28 @@ procedure below for subsequent regression and additional coverage.
 - Verify history behavior under filtered, incomplete, and missed scans.
 - Record heap low-water mark, stack/future allocations, scan durations, and
   uptime during a multi-hour repeated-scan run.
+
+## Terminal presentation regression procedure
+
+On 2026-11-07, the local presentation checks passed: 39 host tests, workspace
+formatting, host and ESP32 Clippy with warnings denied, and development/release
+firmware linking. Report tests cover widths 40..160, complete escaped SSID
+retention, original field order, color alignment, and bounded output buffers.
+
+The color and width changes require a new hardware check following the v0.1.0
+acceptance record above.
+
+- Run `help` and verify its complete command list, including terminal settings.
+- Run `terminal`, `terminal color on`, and `terminal color off`. Check the cyan
+  prompt, green prompt marker, RSSI colors, red errors, and yellow warnings
+  where the corresponding conditions can be exercised.
+- Set widths 40, 70, 80, and 160. Use `networks` to render the same cached scan
+  and verify all five original fields and complete SSIDs remain available.
+- Select auto, table, and compact layouts. Confirm aligned columns without
+  vertical separators and compact fallback below 70 columns.
+- While watch is active, type a partial command and allow a report to arrive.
+  Check prompt redraw and input retention with colors on and off, then stop.
+- Reboot and verify enabled colors, width 80, and automatic layout are restored.
 
 ## Additional evidence still needed
 

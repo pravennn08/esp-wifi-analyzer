@@ -1,9 +1,8 @@
 # CLI contract and implementation stages
 
 The firmware implements the command surface below over UART0 at 115200 baud.
-Commands collect or inspect real driver observations; the firmware does not
-generate demonstration network records. Hardware acceptance checks remain
-pending for this implementation.
+Commands collect or inspect real driver observations. See the
+[validation record](validation.md) for hardware coverage.
 
 ## Available now
 
@@ -11,7 +10,7 @@ pending for this implementation.
 ESP32 Wi-Fi Analyzer 0.1.0
 Target: ESP32 / UART0 at 115200 baud
 Type 'help' for commands.
-wifi> help
+esp-wifi> help
 Commands:
   help                              Show available commands
   status                            Show device and scanner status
@@ -21,6 +20,10 @@ Commands:
   stop                              Stop further watch scans
   history <BSSID>                   Show retained RSSI observations
   channels                          Summarize AP presence by channel
+  terminal                          Show terminal settings
+  terminal color on|off             Set ANSI colors
+  terminal width N                  Set report width in columns
+  terminal layout auto|table|compact
 ```
 
 `status` requests a snapshot from the application task. It reports firmware
@@ -35,7 +38,7 @@ request is rejected explicitly. Reports stream bounded chunks rather than
 placing a whole 32-network table in one buffer. The console redraws the prompt
 and preserves a line being edited while asynchronous watch reports arrive.
 
-## v0.1 command surface
+## Commands
 
 | Command | Behavior |
 |---|---|
@@ -49,6 +52,10 @@ and preserves a line being edited while asynchronous watch reports arrive.
 | `history <BSSID>` | Show retained RSSI observations |
 | `channels` | Summarize AP presence from a full scan |
 | `status` | State, uptime, scan counters, heap, duration, capacities |
+| `terminal` | Show session color, width, and layout settings |
+| `terminal color on\|off` | Enable or disable ANSI styling |
+| `terminal width N` | Set the report width to 40..160 columns |
+| `terminal layout auto\|table\|compact` | Choose the scan report layout |
 
 The configured scan set is channels 1..11. An all-channel scan visits those
 channels individually; it does not imply every channel supported by the chip.
@@ -56,6 +63,25 @@ The adapter rejects channels outside that configured set even if the parser
 recognizes their numeric syntax. The firmware does not infer a location or
 claim that the driver's default region was reconfigured.
 `--ssid` and `watch --bssid` can follow after the initial command set.
+
+## Terminal settings
+
+The session starts with colors on, a width of 80 columns, and automatic
+layout. Settings reset on reboot. UART carries text bytes, so set the width
+manually to match your serial monitor.
+
+With colors enabled, cyan marks headings and the prompt name, green marks the
+prompt marker, yellow marks warnings, and red marks errors. Scan RSSI values
+use green, yellow, or red as a quick visual cue. The numeric dBm reading is
+always present.
+
+Table layouts retain the original SSID, BSSID, channel, RSSI, and security
+fields in order. Complete escaped names wrap across continuation lines. A
+width below 70 columns uses labeled compact entries for both automatic and
+table layouts. Compact layout can also be selected explicitly at wider widths.
+RSSI is green at -60 dBm or stronger, yellow from -75 to -61 dBm, and red below
+-75 dBm. These thresholds are display cues. Security labels retain their full
+advertised mode names.
 
 ## Cache, watch, and history semantics
 
@@ -102,15 +128,15 @@ claim that the driver's default region was reconfigured.
 ## Example scan output
 
 ```text
-wifi> scan
+esp-wifi> scan
 Scanning...
 Scan #1; age: 0 ms; duration: 2140 ms
 Coverage: all configured channels
 Configured scan channels: 1..11
-SSID (escaped) | BSSID | CH | RSSI | SECURITY
-"Lab" | 02:11:22:33:44:01 | 6 | -42 dBm | WPA2-Personal
+SSID (escaped)            BSSID               CH        RSSI  SECURITY
+"Lab"                     02:11:22:33:44:01    6     -42 dBm  WPA2-Personal
 Returned: 1 AP; strongest RSSI first.
-wifi>
+esp-wifi>
 ```
 
 At the scan capacity, print "result limit reached; list may be incomplete".

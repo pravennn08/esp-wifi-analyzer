@@ -1,7 +1,7 @@
 # Troubleshooting
 
 Run PowerShell commands from the repository root unless stated otherwise.
-Type analyzer commands in the serial terminal at the board's `wifi>` prompt.
+Type analyzer commands in the serial terminal at the board's `esp-wifi>` prompt.
 For tool installation, see [development.md](development.md).
 
 ## Rust, Cargo, or espflash is not recognized
@@ -78,7 +78,7 @@ terminal attached after the prompt was printed.
 
 ## Unknown commands, unsupported characters, or duplicated input
 
-- Enter commands such as `help` at `wifi>`, not at the PowerShell prompt.
+- Enter commands such as `help` at the analyzer's `esp-wifi>` prompt.
 - Commands currently use ASCII. Arrow keys and bracketed-paste control
   sequences can produce an unsupported-character error. Type a short command
   manually or use a terminal configured to send plain text.

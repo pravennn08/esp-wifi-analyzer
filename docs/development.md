@@ -104,7 +104,7 @@ Close the old serial monitor, then build/flash the new image:
 .\scripts\flash.ps1 -Port COM3
 ```
 
-Once the `wifi>` prompt appears, try commands in the monitor:
+Once the `esp-wifi>` prompt appears, try commands in the monitor:
 
 ```text
 help

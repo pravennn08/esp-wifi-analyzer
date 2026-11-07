@@ -103,23 +103,26 @@ build, flash, and start the monitor:
 
 ### Run commands
 
-Type commands at the device's `wifi>` prompt in the serial monitor:
+Type commands at the device's `esp-wifi>` prompt in the serial monitor:
 
 ```text
-wifi> help
-wifi> status
-wifi> scan
-wifi> networks
-wifi> channels
-wifi> scan --channel 6 --passive
-wifi> watch --interval 10s --count 3
-wifi> history 02:11:22:33:44:55
-wifi> stop
+esp-wifi> help
+esp-wifi> status
+esp-wifi> scan
+esp-wifi> networks
+esp-wifi> channels
+esp-wifi> scan --channel 6 --passive
+esp-wifi> watch --interval 10s --count 3
+esp-wifi> history 02:11:22:33:44:55
+esp-wifi> stop
 ```
 
 Replace the example BSSID with one returned by your scan. `networks` reads the
 cache; `scan` collects fresh observations. `channels` requires a full-scan
 snapshot, so run `scan` again after a channel-filtered scan if needed.
+Colors are enabled at startup and require a serial monitor that renders ANSI
+colors. Use `terminal color off` for plain output and `terminal width 80` to
+set the report width to match your window.
 See the [CLI contract](docs/cli.md) for options, limits, and editing behavior.
 
 ## Contributing

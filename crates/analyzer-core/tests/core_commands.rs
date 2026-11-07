@@ -2,8 +2,12 @@
 
 use analyzer_core::{
     analysis::history::HistoryStore,
-    cli::{Command, InputEvent, LineEditor, parse},
+    cli::{
+        Command, InputEvent, LineEditor, parse,
+        terminal::{TerminalCommand, TerminalLayout, TerminalSettings},
+    },
     config::{HISTORY_SAMPLES, MAX_ACCESS_POINTS},
+    error::CommandError,
     model::{AccessPoint, Bssid, ScanCoverage, ScanOptions, ScanSnapshot, Security, WatchOptions},
     watch::WatchSchedule,
 };
@@ -67,6 +71,57 @@ fn command_grammar_supports_the_full_mvp_surface() {
             count: Some(1000)
         }))
     );
+}
+
+#[test]
+fn terminal_commands_select_plain_or_ansi_output_and_layout() {
+    let defaults = TerminalSettings::default();
+    assert_eq!(
+        defaults,
+        TerminalSettings {
+            color: true,
+            width: 80,
+            layout: TerminalLayout::Auto
+        }
+    );
+    for (input, command) in [
+        ("terminal", TerminalCommand::Show),
+        ("terminal color on", TerminalCommand::Color(true)),
+        ("terminal color off", TerminalCommand::Color(false)),
+        ("terminal width 40", TerminalCommand::Width(40)),
+        ("terminal width 160", TerminalCommand::Width(160)),
+        (
+            "terminal layout auto",
+            TerminalCommand::Layout(TerminalLayout::Auto),
+        ),
+        (
+            "terminal layout table",
+            TerminalCommand::Layout(TerminalLayout::Table),
+        ),
+        (
+            "terminal layout compact",
+            TerminalCommand::Layout(TerminalLayout::Compact),
+        ),
+    ] {
+        assert_eq!(parse(input), Ok(Command::Terminal(command)), "{input}");
+    }
+}
+
+#[test]
+fn terminal_commands_reject_missing_out_of_bounds_or_extra_arguments() {
+    for input in [
+        "terminal color",
+        "terminal color true",
+        "terminal width 39",
+        "terminal width 161",
+        "terminal width +80",
+        "terminal width 80px",
+        "terminal width 4294967296",
+        "terminal layout grid",
+        "terminal layout table compact",
+    ] {
+        assert_eq!(parse(input), Err(CommandError::InvalidArguments), "{input}");
+    }
 }
 
 #[test]

@@ -2,7 +2,7 @@
 
 //! Bounded protocols between the console, state owner, and radio worker.
 use analyzer_core::{
-    cli::Command,
+    cli::{Command, terminal::TerminalSettings},
     config::{REQUEST_QUEUE_DEPTH, RESPONSE_QUEUE_DEPTH, STATUS_REPORT_BYTES},
     error::ScanError,
     model::{ScanOptions, ScanSnapshot},
@@ -25,6 +25,8 @@ pub struct Request {
 pub enum ReplyKind {
     Text(String<STATUS_REPORT_BYTES>),
     Status(StatusSnapshot),
+    /// Apply the settings before printing this acknowledgement or its prompt.
+    Terminal(TerminalSettings),
     /// A nonterminal notice followed by a prompt while the operation runs.
     Progress(&'static str),
 }

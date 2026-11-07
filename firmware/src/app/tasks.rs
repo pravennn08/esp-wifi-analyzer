@@ -8,6 +8,7 @@ use analyzer_core::{
             HELP_TEXT, write_access_point, write_channels, write_history_header,
             write_history_sample, write_network_footer, write_network_header,
         },
+        terminal::{TerminalCommand, TerminalSettings},
     },
     config::STATUS_REPORT_BYTES,
     error::ScanError,
@@ -63,6 +64,9 @@ pub async fn analyzer(radio_state: RadioState) {
     let mut in_flight: Option<InFlight> = None;
     let mut next_scan_id = 1u32;
     let mut stop_cutoff = None;
+    // Serialize setting changes with command and watch reports. The console
+    // applies a copy when it receives the acknowledgement.
+    let mut terminal_settings = TerminalSettings::default();
 
     loop {
         let due_ms = if in_flight.is_none() {
@@ -106,7 +110,7 @@ pub async fn analyzer(radio_state: RadioState) {
                         history.observe(&snapshot);
                         state.latest = Some(snapshot);
                         if let Some(snapshot) = state.latest.as_ref() {
-                            send_networks(origin.request_id, snapshot).await;
+                            send_networks(origin.request_id, snapshot, terminal_settings).await;
                         }
                     }
                     Err(error) => {
@@ -158,7 +162,22 @@ pub async fn analyzer(radio_state: RadioState) {
             Either4::Fourth(request) => {
                 let id = Some(request.id);
                 match request.command {
-                    Command::Help => send_text(id, true, HELP_TEXT).await,
+                    Command::Help => send_help(id).await,
+                    Command::Terminal(command) => {
+                        match command {
+                            TerminalCommand::Show => {}
+                            TerminalCommand::Color(color) => terminal_settings.color = color,
+                            TerminalCommand::Width(width) => terminal_settings.width = width,
+                            TerminalCommand::Layout(layout) => terminal_settings.layout = layout,
+                        }
+                        REPLIES
+                            .send(Reply {
+                                request_id: id,
+                                kind: ReplyKind::Terminal(terminal_settings),
+                                complete: true,
+                            })
+                            .await;
+                    }
                     Command::Status => {
                         let heap = esp_alloc::HEAP.stats();
                         let status = StatusSnapshot {
@@ -263,13 +282,18 @@ pub async fn analyzer(radio_state: RadioState) {
                         send_text(id, true, stop_text(was_watching, in_flight.is_some())).await;
                     }
                     Command::Networks => match state.latest.as_ref() {
-                        Some(snapshot) => send_networks(id, snapshot).await,
+                        Some(snapshot) => send_networks(id, snapshot, terminal_settings).await,
                         None => send_text(id, true, "No cached scan. Run scan first.\r\n").await,
                     },
                     Command::Channels => match state.latest.as_ref() {
                         Some(snapshot) => {
                             send_formatted(id, true, |out| {
-                                write_channels(out, snapshot, Instant::now().as_millis())
+                                write_channels(
+                                    out,
+                                    snapshot,
+                                    Instant::now().as_millis(),
+                                    terminal_settings,
+                                )
                             })
                             .await;
                         }
@@ -286,7 +310,7 @@ pub async fn analyzer(radio_state: RadioState) {
                                 let mut formatted = true;
                                 for sample in network.history.samples() {
                                     if !send_formatted(id, false, |out| {
-                                        write_history_sample(out, sample, now)
+                                        write_history_sample(out, sample, now, terminal_settings)
                                     })
                                     .await
                                     {
@@ -321,21 +345,56 @@ async fn watch_deadline(deadline_ms: Option<u64>) {
     }
 }
 
-async fn send_networks(request_id: Option<u32>, snapshot: &ScanSnapshot) {
+async fn send_networks(
+    request_id: Option<u32>,
+    snapshot: &ScanSnapshot,
+    settings: TerminalSettings,
+) {
     let now = Instant::now().as_millis();
     if !send_formatted(request_id, false, |out| {
-        write_network_header(out, snapshot, now)
+        write_network_header(out, snapshot, now, settings)
     })
     .await
     {
         return;
     }
     for ap in &snapshot.access_points {
-        if !send_formatted(request_id, false, |out| write_access_point(out, ap)).await {
+        if !send_formatted(request_id, false, |out| {
+            write_access_point(out, ap, settings)
+        })
+        .await
+        {
             return;
         }
     }
-    send_formatted(request_id, true, |out| write_network_footer(out, snapshot)).await;
+    send_formatted(request_id, true, |out| {
+        write_network_footer(out, snapshot, settings)
+    })
+    .await;
+}
+
+async fn send_help(request_id: Option<u32>) {
+    let mut remaining = HELP_TEXT;
+    while remaining.len() > STATUS_REPORT_BYTES {
+        // Split at a full line so every chunk ends at a UTF-8 boundary and
+        // the console can retain a single prompt for the entire response.
+        let Some(end) = remaining.as_bytes()[..STATUS_REPORT_BYTES]
+            .iter()
+            .rposition(|byte| *byte == b'\n')
+            .map(|index| index + 1)
+        else {
+            send_text(
+                request_id,
+                true,
+                "Error: help line exceeds the report buffer.\r\n",
+            )
+            .await;
+            return;
+        };
+        send_text(request_id, false, &remaining[..end]).await;
+        remaining = &remaining[end..];
+    }
+    send_text(request_id, true, remaining).await;
 }
 
 async fn send_text(request_id: Option<u32>, complete: bool, message: &str) {
